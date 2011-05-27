@@ -40,6 +40,14 @@ class ReadOnlyMembers {
   }
 
   /**
+   * Clone this object, deeply.
+   */
+  public function __clone() {
+    $this->private = clone $this->private;
+    $this->protected = clone $this->protected;
+  }
+
+  /**
    *
    * @param string $name
    */

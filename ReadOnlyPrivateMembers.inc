@@ -43,6 +43,13 @@ class ReadOnlyPrivateMembers {
   }
 
   /**
+   * Clone this object, deeply.
+   */
+  public function __clone() {
+    $this->members = array_replace_recursive($this->members);
+  }
+  
+  /**
    *
    * @param string $name
    * @return boolean
@@ -62,7 +69,7 @@ class ReadOnlyPrivateMembers {
    */
   public function get($name) {
     if ($this->exists($name)) {
-      return $members[$name];
+      return $this->members[$name];
     }
     return NULL;
   }
@@ -75,7 +82,7 @@ class ReadOnlyPrivateMembers {
    */
   public function set($name, $value) {
     if ($this->exists($name)) {
-      if (get_caller_class($this->depth) == $this->owner_class) {
+      if (get_caller_class($this->depth) == $this->owner) {
         $this->members[$name] = $value;
       }
     }
