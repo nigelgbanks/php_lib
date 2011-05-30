@@ -29,6 +29,11 @@ class ReadOnlyPrivateMembers {
    * @var array
    */
   protected $members;
+  /**
+   *
+   * @var type 
+   */
+  protected $values;
 
   /**
    *
@@ -39,53 +44,87 @@ class ReadOnlyPrivateMembers {
   public function __construct(array $members, array $params = NULL) {
     $this->owner = isset($params['owner']) ? $params['owner'] : get_caller_class(1);
     $this->depth = isset($params['depth']) ? $params['depth'] : 2;
-    $this->members = $members;
+    $this->members = array_keys($members);
+    $this->values = $members;
   }
 
   /**
    * Clone this object, deeply.
    */
   public function __clone() {
-    $this->members = array_replace_recursive($this->members);
+    $this->members = $this->members;
+    $this->values = $this->values;
   }
-  
+
+  /**
+   *
+   * @param string $name 
+   */
+  public function has($name) {
+    if (array_search($name, $this->members)) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
   /**
    *
    * @param string $name
    * @return boolean
    */
   public function exists($name) {
-    if (array_key_exists($name, $this->members)) {
-      return isset($this->members[$name]);
+    if ($this->has($name)) {
+      return isset($this->values[$name]);
     }
     return FALSE;
   }
 
   /**
-   * Any one can access this member.
    * 
-   * @param string $name
-   * @return mixed
    */
-  public function get($name) {
+  public function add($name, $value = NULL) {
+    array_push($this->members, $name);
+    $this->values[$name] = $value;
+  }
+
+  /**
+   * Removes a member
+   * 
+   * @param string $name 
+   */
+  public function remove($name) {
+    unset($this->members[$name]);
+  }
+
+  /**
+   * Any one can access this member.
+   */
+  public function __get($name) {
     if ($this->exists($name)) {
-      return $this->members[$name];
+      return $this->values[$name];
     }
     return NULL;
   }
 
   /**
-   * Only objects that share the same class as our owner can modify members.
-   * 
+   *
    * @param string $name
    * @param mixed $value 
    */
-  public function set($name, $value) {
-    if ($this->exists($name)) {
+  public function __set($name, $value) {
+    if ($this->has($name)) {
       if (get_caller_class($this->depth) == $this->owner) {
-        $this->members[$name] = $value;
+        $this->values[$name] = $value;
       }
     }
+  }
+
+  public function __isset($name) {
+    return $this->exists($name);
+  }
+
+  public function __unset($name) {
+    unset($this->values[$name]);
   }
 
 }

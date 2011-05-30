@@ -54,8 +54,8 @@ class ReadOnlyProtectedMembers {
    * Clone this object, deeply.
    */
   public function __clone() {
-    $this->members = array_copy_recursive($this->members);
-    $this->values = array_copy_recursive($this->values);
+    $this->members = $this->members; // Copy the array
+    $this->values = $this->values; // References stored in values are shallow copied.
   }
 
   /**
@@ -63,10 +63,7 @@ class ReadOnlyProtectedMembers {
    * @param string $name 
    */
   public function has($name) {
-    if (array_search($name, $this->members)) {
-      return TRUE;
-    }
-    return FALSE;
+    return array_search($name, $this->members) !== FALSE;
   }
 
   /**

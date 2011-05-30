@@ -19,22 +19,23 @@ class ReadOnlyMembers {
    * 
    * @var ReadOnlyPrivateMembers
    */
-  protected $private;
+  public $private;
   /**
    * Protected members that are read only.
    * 
    * @var ReadOnlyProtectedMembers
    */
-  protected $protected;
+  public $protected;
 
   /**
    *
    * @param array $private
    * @param array $protected 
    */
-  public function __construct(array $private, array $protected) {
-    $owner_class = get_caller_class(1);
-    $properties = array('owner_class' => $owner_class, 'depth' => 3);
+  public function __construct(array $private, array $protected, array $params = NULL) {
+    $owner = isset($params['owner']) ? $params['owner'] : get_caller_class(1);
+    $depth = isset($params['depth']) ? $params['depth'] : 3;
+    $properties = array('owner_class' => $owner_class, 'depth' => $depth); // Account for this class in the depth.
     $this->private = new ReadOnlyPrivateMembers($private, $properties);
     $this->protected = new ReadOnlyProtectedMembers($owner_class, $properties);
   }
@@ -49,22 +50,30 @@ class ReadOnlyMembers {
 
   /**
    *
+   * @param string $name 
+   */
+  public function has($name) {
+    return $this->private->has($name) || $this->protected->has($name);
+  }
+
+  /**
+   *
    * @param string $name
+   * @return boolean
    */
   public function exists($name) {
     return $this->private->exists($name) || $this->protected->exists($name);
   }
 
   /**
-   *
-   * @param string $name 
+   * Any one can access this member.
    */
-  public function get($name) {
-    if ($this->private->exists($name)) {
-      return $this->private->get($name);
+  public function __get($name) {
+    if ($this->private->has($name)) {
+      return $this->private->$name;
     }
-    else if ($this->protected->exists($name)) {
-      return $this->protected->get($name);
+    if ($this->protected->has($name)) {
+      return $this->protected->$name;
     }
     return NULL;
   }
@@ -74,12 +83,25 @@ class ReadOnlyMembers {
    * @param string $name
    * @param mixed $value 
    */
-  public function set($name, $value) {
-    if ($this->private->exists($name)) {
-      return $this->private->set($name, $value);
+  public function __set($name, $value) {
+    if ($this->private->has($name)) {
+      return $this->private->$name = $value;
     }
-    else if ($this->protected->exists($name)) {
-      return $this->protected->set($name, $value);
+    if ($this->protected->has($name)) {
+      return $this->protected->$name = $value;
+    }
+  }
+
+  public function __isset($name) {
+    return $this->exists($name);
+  }
+
+  public function __unset($name) {
+    if ($this->private->exists($name)) {
+      unset($this->private->$name);
+    }
+    if ($this->protected->has($name)) {
+      unset($this->protected->$name);
     }
   }
 
