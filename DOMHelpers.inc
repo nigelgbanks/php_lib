@@ -64,3 +64,18 @@ function get_dom_node_xpath_index(DOMNode $parent, DOMNode $child) {
   return $index;
 }
 
+/**
+ * Converts a DOMNodeList to an array.
+ * 
+ * @param DOMNodeList $list
+ * @return array
+ */
+function dom_node_list_to_array(DOMNodeList $list) {
+  $count = $list->length;
+  $output = array();
+  for ($i = 0; $i < $count; $i++) {
+    $output[] = $list->item($i);
+  }
+  return $output;
+}
+
