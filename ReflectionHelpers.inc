@@ -10,6 +10,16 @@
  */
 
 /**
+ * Checks to see if the given variable has a class.
+ * 
+ * @param mixed $var
+ * @return boolean 
+ */
+function has_class($var) {
+  return isset($var) && is_object($var);
+}
+
+/**
  * Check to is if the object matches the given type.
  * 
  * @param object $obj
@@ -18,7 +28,7 @@
  * @return boolean
  */
 function is_type($obj, $type) {
-  return isset($obj) && is_object($obj) && is_string($type) && get_class($obj) == $type;
+  return has_class($obj) && get_class($obj) == $type;
 }
 
 /**
@@ -30,7 +40,7 @@ function is_type($obj, $type) {
  * @return boolean
  */
 function is_descendant($obj, $type) {
-  $class = isset($obj) && is_object($obj) ? get_class($obj) : FALSE;
+  $class = has_class($obj) ? get_class($obj) : NULL;
   if ($class) {
     $reflection = new ReflectionClass($class);
     return $reflection->isSubclassOf($type);
@@ -49,3 +59,18 @@ function is_descendant($obj, $type) {
 function is_or_descends_from($obj, $type) {
   return is_type($obj, $type) || is_descendant($obj, $type);
 }
+
+/**
+ *
+ * @param mixed $obj
+ * @param string $interface
+ * @return boolean
+ */
+function has_interface($obj, $interface) {
+  if (has_class($obj)) {
+    $implements = class_implements(get_class($obj));
+    return isset($implements[$interface]);
+  }
+  return FALSE;
+}
+
