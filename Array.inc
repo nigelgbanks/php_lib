@@ -25,3 +25,18 @@ function array_copy_recursive(array &$array) {
   }
   return $output;
 }
+
+/**
+ *
+ * @param array $array
+ * @param type $key
+ * @param type $value 
+ */
+function array_add(array &$array, $key, $value) {
+  if (isset($key)) {
+    $array[$key] = $value;
+  }
+  else {
+    $array[] = $value;
+  }
+}
