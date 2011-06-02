@@ -51,7 +51,8 @@ function get_dom_node_xpath_fragment(DOMNode $node) {
  */
 function get_dom_node_xpath_index(DOMNode $parent, DOMNode $child) {
   $xpath = new DOMXPath($child->ownerDocument);
-  $results = $xpath->query('child::*', $parent);
+  $name = $child->localName;
+  $results = $xpath->query("child::*[local-name() = '$name']", $parent);
   $count = $results->length;
   $index = 1;
   for ($i = 0; $i < $count; $i++) {

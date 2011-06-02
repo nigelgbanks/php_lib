@@ -40,3 +40,23 @@ function array_add(array &$array, $key, $value) {
     $array[] = $value;
   }
 }
+
+/**
+ * Given an array of index's this functions attempts a depth first traversal of the given array
+ * using the provided indices.
+ * 
+ * @param array $form
+ * @param array $indices
+ * @return mixed
+ *   A reference to the value at the final index if found, FALSE otherwise.
+ */
+function &array_traverse_path(array &$array, array $indices) {
+  $point = &$array;
+  foreach ($indices as $index) {
+    if (empty($point[$index])) {
+      return FALSE;
+    }
+    $point = &$point[$index];
+  }
+  return $point;
+}
