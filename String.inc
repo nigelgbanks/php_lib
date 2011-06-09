@@ -56,3 +56,19 @@ function cast_string_to_boolean($string, array $matches = NULL, $case_sensitive 
   }
   return $string;
 }
+
+/**
+ * Appends a value to each new line in the given string.
+ * 
+ * @param string $string
+ * @param string $appendage
+ * 
+ * @return string 
+ */
+function append_to_new_line($string, $appendage) {
+  $output = '';
+  foreach (preg_split("/(\r?\n)/", $string) as $line) {
+    $output .= $line . $appendage;
+  }
+  return $output;
+}

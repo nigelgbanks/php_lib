@@ -7,6 +7,7 @@
  *
  * A collection of functions to help with DOM processing.
  */
+module_load_include('inc', 'php_lib', 'String');
 
 /**
  * Gets the a xpath for the given node.
@@ -80,3 +81,34 @@ function dom_node_list_to_array(DOMNodeList $list) {
   return $output;
 }
 
+/**
+ * Formats and indents the given DOMDocument.
+ * 
+ * @param DOMDocument $document 
+ */
+function format_dom_document(DOMDocument $document) {
+  $filename = drupal_get_path('module', 'php_lib') . '/js/pretty-print/PrettyPrint.xsl';
+  $xsl = new DOMDocument();
+  $xsl->load($filename);
+  $proc = new XSLTProcessor();
+  $proc->importStylesheet($xsl);
+  $xml = $proc->transformToXml($document);
+  $document->loadXML($xml);
+}
+
+/**
+ * Pretty print the given document, to the browswer.
+ * 
+ * @param DOMDocument $document 
+ */
+function dom_document_pretty_print(DOMDocument $document) {
+  format_dom_document($document);
+  $content = htmlentities($document->saveXML());
+  $content = append_to_new_line($content, '<br/>');
+  $path = drupal_get_path('module', 'php_lib');
+  echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
+  echo("<link type='text/css' rel='stylesheet' media='all' href='$path/js/pretty-print/prettify.css'>");
+  echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
+  echo("<code class='prettyprint xml' style='overflow: scroll; position: relative;'>$content</code>");
+  echo("<script type='text/javascript'>prettyPrint();</script>");
+}
