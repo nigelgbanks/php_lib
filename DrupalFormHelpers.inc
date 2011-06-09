@@ -53,3 +53,19 @@ function get_form_element_property(array &$element, $property) {
   }
   return isset($element[$property]) ? $element[$property] : $default_value;
 }
+
+/**
+ *
+ * @param array $element
+ * @param string $type 
+ * @return array
+ */
+function get_element_children(array &$element, $type) {
+  $children = element_children($element);
+  foreach ($children as $key => $child) {
+    if (empty($element[$child]['#type']) || $element[$child]['#type'] != $type) {
+      unset($children[$key]);
+    }
+  }
+  return $children;
+}
