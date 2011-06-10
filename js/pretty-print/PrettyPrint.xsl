@@ -10,10 +10,12 @@
 
 <xsl:stylesheet version="1.0"
  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-    <xsl:output omit-xml-declaration="yes" indent="yes" method="html"/>
-    <xsl:template match="node()|@*">
+    <xsl:output omit-xml-declaration="yes" indent="yes" method="xml"/>
+    <xsl:strip-space elements="*"/>
+    <xsl:template match="*">  
       <xsl:copy>
-        <xsl:apply-templates select="node()|@*"/>
+          <xsl:apply-templates select="node()">           
+          </xsl:apply-templates>
       </xsl:copy>
     </xsl:template>
 </xsl:stylesheet>
