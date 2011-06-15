@@ -82,8 +82,15 @@ class ReadOnlyProtectedMembers {
    * 
    */
   public function add($name, $value = NULL) {
-    array_push($this->members, $name);
-    $this->values[$name] = $value;
+    if (is_array($name)) {
+      foreach ($name as $key => &$value) {
+        $this->add($key, $value);
+      }
+    }
+    else if (is_string($name)) {
+      array_push($this->members, $name);
+      $this->values[$name] = $value;
+    }
   }
 
   /**

@@ -60,3 +60,19 @@ function &array_traverse_path(array &$array, array $indices) {
   }
   return $point;
 }
+
+/**
+ *
+ * @param array $array
+ * @param string $type
+ * @return array
+ */
+function array_filter_type(array &$array, $type) {
+  $filtered = array();
+  foreach ($array as $item) {
+    if ($item instanceof $type) {
+      $filtered[] = $item;
+    }
+  }
+  return $filtered;
+}

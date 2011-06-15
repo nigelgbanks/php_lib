@@ -112,3 +112,56 @@ function dom_document_pretty_print(DOMDocument $document) {
   echo("<code class='prettyprint xml' style='overflow: scroll; position: relative;'>$content</code>");
   echo("<script type='text/javascript'>prettyPrint();</script>");
 }
+
+/**
+ *
+ * @param DOMElement $element 
+ * @param string $type
+ * @return array
+ */
+function dom_node_children(DOMNode $node, $type = NULL) {
+  $children = dom_node_list_to_array($node->childNodes);
+  if (isset($type)) {
+    return array_filter_type($children, $type);
+  }
+  return $children;
+}
+
+/**
+ *
+ * @param DOMNode $node
+ * @param type $type
+ * @param type $property
+ * @param type $value 
+ */
+function dom_node_filter_children(DOMNode $node, $type, $property, $value) {
+  $output = array();
+  $children = dom_node_children($node, $type);
+  foreach ($children as $child) {
+    if ($child->$property == $value) {
+      $output[] = $child;
+    }
+  }
+  return $output;
+}
+
+/**
+ * Calls a function for each child node of the given element node.
+ * 
+ * @param DOMElement $element
+ * @param mixed $child_type
+ * @param mixed $user_func 
+ * @param ... Arguments for the user function.
+ */
+function dom_element_for_each_child(DOMElement $element, $child_type, $user_func /* Variable Arguments */) {
+  $user_func_args = func_get_args();
+  array_splice($user_args, 2); // Remove the $element and $user_func.
+  $children = dom_element_children($element, $child_type);
+  foreach ($children as $child) {
+    $args = array_merge(array($child), $user_func_args);
+    if (call_user_func_array($user_func, $user_func_args) === FALSE) {
+      return FALSE;
+    }
+  }
+  return TRUE;
+}
