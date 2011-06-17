@@ -1,6 +1,7 @@
 ; $Id$
 name = PHP Lib
 description = A collection of interfaces classes and functions that can be used in a variety of environments.
-core = 6.x
 files[] = tests/Array.test
+version = 6.x-$Format:%h$-dev
+core = 6.x
 php = 5.2
