@@ -76,3 +76,27 @@ function array_filter_type(array &$array, $type) {
   }
   return $filtered;
 }
+
+/**
+ *
+ * @param array $array 
+ */
+function is_non_empty_array($array) {
+  return is_array($array) && count($array) > 0;
+}
+
+/**
+ *
+ * @param type $object
+ * @return type 
+ */
+function object_as_array($object) {
+  $array = array();
+  if (is_object($object) || is_array($object)) {
+    foreach ($object as $key => $value) {
+      $array[$key] = is_object($value) ? object_as_array($value) : $value;
+    }
+    return $array;
+  }
+  return $object;
+}

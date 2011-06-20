@@ -72,3 +72,12 @@ function append_to_new_line($string, $appendage) {
   }
   return $output;
 }
+
+/**
+ *
+ * @param string $string
+ * @return boolean
+ */
+function is_non_empty_string($string) {
+  return is_string($string) && trim($string) != '';
+}
