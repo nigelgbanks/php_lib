@@ -146,6 +146,23 @@ function dom_node_filter_children(DOMNode $node, $type, $property, $value) {
 }
 
 /**
+ * Finds unquie child on params.
+ * 
+ * @param DOMNode $node
+ * @param type $type
+ * @param type $property
+ * @param type $value
+ * @return type 
+ */
+function dom_node_find_child(DOMNode $node, $type, $property, $value) {
+  $children = dom_node_filter_children($node, 'DOMElement', 'localName', 'complexType');
+  if (count($children) == 1) {
+    return array_shift($children);
+  }
+  return NULL;
+}
+
+/**
  * Calls a function for each child node of the given element node.
  * 
  * @param DOMElement $element
