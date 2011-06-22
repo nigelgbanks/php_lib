@@ -102,10 +102,11 @@ function format_dom_document(DOMDocument $document) {
  * @param DOMDocument $document 
  */
 function dom_document_pretty_print(DOMDocument $document) {
+  global $base_url;
   format_dom_document($document);
   $content = htmlentities($document->saveXML());
   $content = append_to_new_line($content, '<br/>');
-  $path = drupal_get_path('module', 'php_lib');
+  $path = $base_url . '/' . drupal_get_path('module', 'php_lib');
   echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
   echo("<link type='text/css' rel='stylesheet' media='all' href='$path/js/pretty-print/prettify.css'>");
   echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
