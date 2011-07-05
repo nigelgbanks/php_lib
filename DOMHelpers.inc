@@ -183,3 +183,17 @@ function dom_element_for_each_child(DOMElement $element, $child_type, $user_func
   }
   return TRUE;
 }
+
+/**
+ * Checks if a given node has child DOMElement's.
+ * 
+ * @param DOMNode $node
+ * 
+ * @return int
+ */
+function dom_element_has_child_elements(DOMNode $node) {
+  $xpath = new DOMXPath($node->ownerDocument);
+  $result = $xpath->query('child::*', $node);
+  return $result->length > 0;
+}
+
