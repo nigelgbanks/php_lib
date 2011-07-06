@@ -100,3 +100,15 @@ function object_as_array($object) {
   }
   return $object;
 }
+
+/**
+ * Returns the first element without modifying the array.
+ * 
+ * @param array $array 
+ */
+function array_peek(array $array) {
+  reset($array);
+  list($key, $value) = each($array);
+  reset($array);
+  return array($key, $value);
+}
