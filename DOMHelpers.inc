@@ -37,11 +37,6 @@ function get_dom_node_xpath_fragment(DOMNode $node) {
     return "@{$node->nodeName}";
   }
   else {
-    if (!($node->parentNode instanceof DOMNode)) {
-      var_dump($node->parentNode);
-      var_dump($node->localName);
-      exit();
-    }
     $index = get_dom_node_xpath_index($node->parentNode, $node);
     return "{$node->nodeName}[$index]";
   }
