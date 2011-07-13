@@ -12,10 +12,7 @@
  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output omit-xml-declaration="yes" indent="yes" method="xml"/>
     <xsl:strip-space elements="*"/>
-    <xsl:template match="*">  
-      <xsl:copy>
-          <xsl:apply-templates select="node()">           
-          </xsl:apply-templates>
-      </xsl:copy>
+    <xsl:template match="/">  
+      <xsl:copy-of select="node()"/>
     </xsl:template>
 </xsl:stylesheet>
