@@ -38,7 +38,8 @@ function get_dom_node_xpath_fragment(DOMNode $node) {
   }
   else {
     $index = get_dom_node_xpath_index($node->parentNode, $node);
-    return "{$node->nodeName}[$index]";
+    $name = "*[local-name() = '{$node->nodeName}']";
+    return "{$name}[$index]";
   }
 }
 
