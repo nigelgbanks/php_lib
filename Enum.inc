@@ -75,7 +75,7 @@ abstract class Enum {
     }
     return $consts;
   }
-  
+
   public function __get($name) {
     return $this->protected->$name;
   }
@@ -90,6 +90,21 @@ abstract class Enum {
 
   public function __unset($name) {
     unset($this->protected->$name);
+  }
+
+  public function __toString() {
+    return $this->val;
+  }
+
+  public static function __callStatic($name, $arguments) {
+    $consts = $this->getConstList(FALSE);
+    if (isset($consts[$name])) {
+      return $consts[$name];
+    }
+    else {
+      $class_name = __CLASS__;
+      throw new Exception("Constant '$name' is not defined in '$class_name'.");
+    }
   }
 
 }
