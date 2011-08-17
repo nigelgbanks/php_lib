@@ -77,8 +77,8 @@ function get_dom_node_xpath_index(DOMNode $parent, DOMNode $child) {
  * @return array
  */
 function dom_node_list_to_array(DOMNodeList $list) {
-  $count = $list->length;
   $output = array();
+  $count = $list->length;
   for ($i = 0; $i < $count; $i++) {
     $output[] = $list->item($i);
   }
