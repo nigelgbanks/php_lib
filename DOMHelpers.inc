@@ -101,21 +101,35 @@ function format_dom_document(DOMDocument $document) {
 }
 
 /**
+ * Includes the files required for the DOMDocument pretty print to function.
+ */
+function dom_document_pretty_print_include_files() {
+  $path = drupal_get_path('module', 'php_lib'); 
+  drupal_add_js("$path/js/pretty-print/prettify.js");
+  drupal_add_css("$path/js/pretty-print/prettify.css"); // @todo move pretty print to a its own module or a lib folder.
+}
+
+/**
  * Pretty print the given document, to the browswer.
  * 
  * @param DOMDocument $document 
  */
-function dom_document_pretty_print(DOMDocument $document) {
+function dom_document_pretty_print(DOMDocument $document, $ret = FALSE) {
   global $base_url;
   format_dom_document($document);
   $content = htmlentities($document->saveXML());
   $content = append_to_new_line($content, '<br/>');
-  $path = $base_url . '/' . drupal_get_path('module', 'php_lib');
-  echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
-  echo("<link type='text/css' rel='stylesheet' media='all' href='$path/js/pretty-print/prettify.css'>");
-  echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
-  echo("<code class='prettyprint xml' style='overflow: scroll; position: relative;'>$content</code>");
-  echo("<script type='text/javascript'>prettyPrint();</script>");
+  if ($ret) {
+    return "<code class='prettyprint xml' style='overflow: scroll; position: relative;'>$content</code>";
+  }
+  else {
+    $path = $base_url . '/' . drupal_get_path('module', 'php_lib');
+    echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
+    echo("<link type='text/css' rel='stylesheet' media='all' href='$path/js/pretty-print/prettify.css'>");
+    echo("<script type='text/javascript' src='$path/js/pretty-print/prettify.js'></script>");
+    echo("<code class='prettyprint xml' style='overflow: scroll; position: relative;'>$content</code>");
+    echo("<script type='text/javascript'>prettyPrint();</script>");
+  }
 }
 
 /**
