@@ -4,7 +4,7 @@
  * @file
  *
  * Helper functions for file processing.
- */ 
+ */
 
 /**
  * Moves the file pointer to the begining of the current line.
@@ -96,6 +96,51 @@ function file_line_next($handle) {
 }
 
 /**
+ * Similar to fgetcsv, except it ignores enclosures, as fgetcvs breaks with open ended quotes.
+ * 
+ * Also the number of expected fields can be given in which case the function will read multiple lines 
+ * until it has gotten the all the required fields. This helps deal with files that don't have properly 
+ * escaped newlines. The newlines will be preserved in the returned values.
+ * 
+ * Please check too see if fgetcsv works before using this function as its scope is limited, it doesn't deal with 
+ * enclosures or escapes correctly.
+ * 
+ * Note that it is possible for this function to return more fields than expected.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * @param int $length
+ *   The max number of bytes to read from the current line.
+ * @param string $delimiter
+ *   A single character used to delimit the fields in the csv.
+ * @param int $expected_fields
+ *   The number of fields expected to be read for a single line.
+ * 
+ * @return array
+ *   An array containing the values in each field.
+ */
+function file_get_csv($handle, $length = 0, $delimiter = ',', $expected_fields = NULL) {
+  $string = (isset($length) || $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
+  if (isset($expected_fields)) {
+    $fields = explode($delimiter, $string);
+    while (count($fields) < $expected_fields) {
+      $string = (isset($length) || $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
+      $next_line_fields = explode($delimiter, $string);
+      // Merge the last field with the start of this one.
+      $fields[count($fields) - 1] .= array_shift($next_line_fields);
+      $fields = array_merge($fields, $next_line_fields);
+    }
+  }
+  else {
+    $fields = explode($delimiter, $string); // No concern for the number of expected fields.
+  }
+  // Trim the last new line as it is meant to delimit the end of the row.
+  $last_index = count($fields) - 1;
+  $fields[$last_index] = trim($fields[$last_index]);
+  return $fields;
+}
+
+/**
  * Peeks at the current character.
  * 
  * Doesn't move the file pointer.
@@ -119,16 +164,21 @@ function fpeekc($handle) {
  * 
  * Doesn't move the file pointer.
  * 
- * Returns FALSE when the character is EOF.
+ * Reading ends when length - 1 bytes have been read, on a newline (which is included in the return value), 
+ * or on EOF (whichever comes first). If no length is specified, it will keep reading from the stream until 
+ * it reaches the end of the line.
  * 
  * @param resource $handle
  *   File handle.
+ * @param int $length
+ *   The max number of bytes to read from the current line.
+ * 
  * @return string
  *   The single character read, or FALSE if EOF.
  */
-function fpeeks($handle) {
+function fpeeks($handle, $length = NULL) {
   $pos = ftell($handle);
-  $string = fgets($handle);
+  $string = isset($length) ? fgets($handle, $length) : fgets($handle);
   fseek($handle, $pos, SEEK_SET);
   return $string;
 }
