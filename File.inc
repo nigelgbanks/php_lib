@@ -34,11 +34,11 @@ function file_line_start($handle) {
   if (feof($handle)) { // Wrapped the document set back to start.
     fseek($handle, 0, SEEK_SET);
   }
-  return ftell($handle); // Current positon will be the character following the previous lines "/n" or the start of the file
+  return ftell($handle); // Current positon will be the character following the previous lines "\n" or the start of the file
 }
 
 /**
- * Moves the file pointer to the end of the current line, or the end of the file if not "/n" is found.
+ * Moves the file pointer to the end of the current line, or the end of the file if not "\n" is found.
  * 
  * @param resource $handle
  *   File handle.
@@ -61,6 +61,9 @@ function file_line_end($handle) {
 /**
  * Moves the file pointer to the begining of the previous line.
  * 
+ * This function can wrap the file, if called on the first line of the file the file pointer
+ * will be placed at the last line of the file.
+ * 
  * @param resource $handle
  *   File handle.
  * 
@@ -69,13 +72,16 @@ function file_line_end($handle) {
  */
 function file_line_prev($handle) {
   $pos = file_line_start($handle);
-  $pos = $pos - 2; // Move back and ignore the current character and the "/n".
+  $pos = $pos - 2; // Move back and ignore the current character and the "\n".
   fseek($handle, $pos, SEEK_SET);
   return file_line_start($handle);
 }
 
 /**
  * Moves the file pointer to the begining of the previous line.
+ * 
+ * This function can wrap the file, if called on the last line of the file the file pointer
+ * will be placed at the first line of the file.
  * 
  * @param resource $handle
  *   File handle.
@@ -85,13 +91,58 @@ function file_line_prev($handle) {
  */
 function file_line_next($handle) {
   $pos = file_line_end($handle);
-  $pos = $pos + 2; // Move back and ignore the current character and the "/n".
+  $pos = feof($handle) ? 0 : $pos + 1; // Return to start or skip the "\n" onto the next line
   fseek($handle, $pos, SEEK_SET);
-  do {
-    fseek($handle, $pos, SEEK_END);
-    $t = fgetc($handle);
-    $pos = $pos - 1;
-  } while ($t != "\n");
+  return ftell($handle);
+}
+
+/**
+ * Moves the file pointer back the given number of $lines.
+ * 
+ * This function won't wrap the file, if the begining of the file is reached the function exits.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * @param int $lines
+ *   The max number of lines to move backward in the file.
+ * 
+ * @return int
+ *   The file position
+ */
+function file_move_back($handle, $lines) {
+  $pos = file_line_start($handle);
+  if ($pos != 0) {
+    for ($i = 0; $i < $lines; $i++) {
+      if (($pos = file_line_prev($handle)) == 0) {
+        break;
+      }
+    }
+  }
+  return ftell($handle);
+}
+
+/**
+ * Moves the file pointer forward the given number of $lines.
+ * 
+ * This function won't wrap the file, if the end of the file is reached the function exits.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * @param int $lines
+ *   The max number of lines to move forward in the file.
+ * 
+ * @return int
+ *   The file position
+ */
+function file_move_forward($handle, $lines) {
+  $pos = file_line_start($handle);
+  if ($pos != 0) {
+    for ($i = 0; $i < $lines; $i++) {
+      if (($pos = file_line_next($handle)) == 0) {
+        break;
+      }
+    }
+  }
   return ftell($handle);
 }
 
