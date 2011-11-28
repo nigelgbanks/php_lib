@@ -32,9 +32,26 @@
  * @return int
  *   The file position
  */
-function file_line_start($handlem, $read_size = 64) {
-  if (fpeekc($handle) === FALSE) { // If at the EOF
-    file_end($handle); // Ignore pointless read pass EOF.
+function file_line_start($handle, $read_size = 64) {
+  /**
+   * Ignore the cruft at the end of a file. This is important without it this function will assume the cruft
+   * at the end of the file was a valid line.
+   */
+  if (file_eof($handle)) {
+    file_end($handle);
+  }
+  /**
+   * If we are at the EOL of our current line ignore it. Notice the order since we are moving backward check for 
+   * "\n" before "\r" to catch all cases of EOL.
+   */
+  if (fpeekc($handle) == "\n") {
+    fseek($handle, -1, SEEK_CUR);
+  }
+  if (fpeekc($handle) == "\r") {
+    fseek($handle, -1, SEEK_CUR);
+  }
+  if (ftell($handle) == 0) { // Already at the start of a line by definition.
+    return 0; // Ignore all other processing.
   }
   do { // Parse a section of the file looking for an EOL character.
     $pos = ftell($handle);
@@ -62,8 +79,7 @@ function file_line_start($handlem, $read_size = 64) {
     fseek($handle, -$length, SEEK_CUR);
   } while (!$found_at && !$last_section);
   if ($found_at) { // Move pointer to character following the EOL
-    $offset = -($length - $found_at);
-    fseek($handle, $offset, SEEK_CUR);
+    fseek($handle, $found_at + 1, SEEK_CUR);
   }
   return ftell($handle); // Current positon will be the character following the previous lines "\n" or the start of the file
 }
