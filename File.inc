@@ -42,20 +42,12 @@ function file_line_start($handle, $read_size = 64) {
   if (file_eof($handle)) {
     file_end($handle);
   }
-  /**
-   * If we are at the EOL of our current line ignore it. Notice the order since we are moving backward check for 
-   * "\n" before "\r" to catch all cases of EOL.
-   */
-  if (fpeekc($handle) == "\n") {
-    fseek($handle, -1, SEEK_CUR);
-  }
-  if (fpeekc($handle) == "\r") {
-    fseek($handle, -1, SEEK_CUR);
-  }
+  // Ignore the eol that we are currently sitting on as its part of the current line.
+  file_move_before_eol($handle);
   if (ftell($handle) == 0) { // Already at the start of a line by definition.
     return 0; // Ignore all other processing.
   }
-  do { // Parse a section of the file looking for an EOL character.
+  do { // Parse a section of the file looking for an EOL character from the previous line.
     $pos = ftell($handle);
     $length = min($pos, $read_size);
     $last_section = ($pos - $length) == 0;
@@ -103,27 +95,12 @@ function file_line_start($handle, $read_size = 64) {
  *   The file position
  */
 function file_line_end($handle, $read_size = 64) {
-  /**
-   * If at the EOF Ignore the cruft and return the EOF positon.
-   */
-  if (file_eof($handle)) {
+  if (file_eof($handle)) { // If at the EOF Ignore the cruft and return the EOF positon. 
     file_end($handle);
     return ftell($handle);
   }
-  /**
-   * If we are at the EOL of our current line exit. Notice the order since we are moving forward check for 
-   * "\r\n" -> "\r" -> "\n" to catch all cases of EOL.
-   */
-  if (fpeekc($handle) == "\r") {
-    fseek($handle, 1, SEEK_CUR);
-    if (fpeekc($handle) == "\n") {
-      return ftell($handle);
-    }
-    fseek($handle, -1, SEEK_CUR); // Revert check for "\n"
-    return ftell($handle);
-  }
-  if (fpeekc($handle) == "\n") {
-    return ftell($handle);
+  if (file_eol($handle)) { // If at the EOL return the positon of the last character in the EOL sequence. 
+    return file_move_end_of_eol($handle);
   }
   do { // Parse a section of the file looking for an EOL character.
     $remaining = file_tell_eof($handle) - ftell($handle);
@@ -326,6 +303,87 @@ function file_start($handle) {
  */
 function file_end($handle) {
   return fseek($handle, 0, SEEK_END) == 0;
+}
+
+/**
+ * If the file pointer is on a EOL sequence move it to before the sequence if possible.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * 
+ * @return int
+ *   The file position
+ */
+function file_move_before_eol($handle) {
+  /**
+   * If we are at the EOL of our current line ignore it. Notice the order since we are moving backward check for 
+   * "\n" before "\r" to catch all cases of EOL.
+   */
+  if (fpeekc($handle) == "\n") {
+    fseek($handle, -1, SEEK_CUR);
+  }
+  if (fpeekc($handle) == "\r") {
+    fseek($handle, -1, SEEK_CUR);
+  }
+  return ftell($handle);
+}
+
+/**
+ * If the file pointer is on a EOL sequence move it to after the sequence if possible.
+ * 
+ * @param resource $handle
+ *   File handle.
+ */
+function file_move_after_eol($handle) {
+  /**
+   * If we are at the EOL of our current line exit. Notice the order since we are moving forward check for 
+   * "\r\n" -> "\r" -> "\n" to catch all cases of EOL.
+   */
+  if (fpeekc($handle) == "\r") {
+    fseek($handle, 1, SEEK_CUR);
+    if (fpeekc($handle) == "\n") {
+      return ftell($handle);
+    }
+    fseek($handle, -1, SEEK_CUR); // Revert check for "\n"
+    return ftell($handle);
+  }
+  if (fpeekc($handle) == "\n") {
+    return ftell($handle);
+  }
+}
+
+/**
+ * If the file pointer is on a EOL sequence move it to after the sequence if possible.
+ * 
+ * @param resource $handle
+ *   File handle.
+ */
+function file_move_end_of_eol($handle) {
+  /**
+   * Notice the order since we are moving forward check for 
+   * "\r\n" -> "\r" -> "\n" to catch all cases of EOL with multicharacters.
+   */
+  if (fpeekc($handle) == "\r") {
+    fseek($handle, 1, SEEK_CUR);
+    if (fpeekc($handle) == "\n") {
+      return ftell($handle);
+    }
+    fseek($handle, -1, SEEK_CUR); // Revert check for "\n"
+    return ftell($handle);
+  }
+}
+
+/**
+ * Checks if the file pointer is currently on an EOL sequence.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * 
+ * @return boolean
+ *   TRUE if successful, FALSE otherwise.
+ */
+function file_eol($handle) {
+  return (fpeekc($handle) == "\r") || (fpeekc($handle) == "\n");
 }
 
 /**
