@@ -85,7 +85,7 @@ function file_line_start($handle, $read_size = 64) {
 }
 
 /**
- * Moves the file pointer to the end of the current line, or the end of the file if not "\n" is found.
+ * Moves the file pointer to the end of the current line, or the end of the file if and EOL sequence is not found.
  * 
  * feof() will not work immeditely after this function is called. Use file_eof() instead.
  * 
@@ -96,6 +96,67 @@ function file_line_start($handle, $read_size = 64) {
  *   The file position
  */
 function file_line_end($handle) {
+  /**
+   * If at the EOF Ignore the cruft and return the EOF positon.
+   */
+  if (file_eof($handle)) {
+    file_end($handle);
+    return ftell($handle);
+  }
+  /**
+   * If we are at the EOL of our current line exit. Notice the order since we are moving forward check for 
+   * "\r\n" -> "\r" -> "\n" to catch all cases of EOL.
+   */
+  if (fpeekc($handle) == "\r") {
+    if (fgetc($handle) == "\n") {
+      return ftell($handle);
+    }
+    fseek($handle, -1, SEEK_CUR); // Ignore the call to fgetc()
+    return ftell($handle);
+  }
+  if (fpeekc($handle) == "\n") {
+    return ftell($handle);
+  }
+  do { // Parse a section of the file looking for an EOL character.
+    $remaining = file_tell_eof($handle) - ftell($handle);
+    $length = min($remaining, $read_size);
+    $last_section = ($remaining - $length) == 0;
+    $s = fread($handle, $length); // Get section to parse.
+    // Search for the first carriage return in this section
+    $pattern = '/^[^\r]*\r$/D'; // First "\r"
+    $matches = array();
+    preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
+    $carriage_return_pos = isset($matches[0][1]) ? $matches[0][1] : NULL;
+    // Search for the first new line in this section
+    $pattern = '/\n[^\n]*$/D'; // First "\n"
+    $matches = array();
+    preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
+    $new_line_pos = isset($matches[0][1]) ? $matches[0][1] : NULL;
+    // Check if we found an EOL character
+    $found_at = max($carriage_return_pos, $new_line_pos);
+  } while (!$found_at && !$last_section);
+  if ($found_at) { // Move pointer to character following the EOL
+    $offset = -($length - $found_at);
+    fseek($handle, $offset, SEEK_CUR);
+    /**
+     * We want to be sure we are at the last character in the EOL sequence.
+     */
+    if (fpeekc($handle) == "\r") {
+      if (fgetc($handle) == "\n") {
+        return ftell($handle);
+      }
+      fseek($handle, -1, SEEK_CUR); // Ignore the call to fgetc()
+      return ftell($handle);
+    }
+    if (fpeekc($handle) == "\n") {
+      return ftell($handle);
+    }
+  }
+  return ftell($handle); // Current positon will be the character following the previous lines "\n" or the start of the file
+
+
+
+
   $c = fpeekc($handle);
   if ($c == "\n") { // If Starting at the very end of the current line exit.
     return ftell($handle);
@@ -298,6 +359,23 @@ function file_eof($handle) {
   $c = fgetc($handle);
   fseek($handle, $pos, SEEK_SET);
   return $c === FALSE;
+}
+
+/**
+ * Gets the position of the EOF character.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * 
+ * @return int
+ *   The position of the EOF character.
+ */
+function file_tell_eof($handle) {
+  $pos = ftell($handle);
+  file_end($handle);
+  $eof_pos = ftell($handle);
+  fseek($handle, $pos);
+  return $eof_pos;
 }
 
 /**
