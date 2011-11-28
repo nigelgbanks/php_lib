@@ -10,22 +10,21 @@
  *  correct value as it depends on attempting to 'read' passed the end of the file to work.
  * 
  * 
- * End of line sequences
+ * End of line (EOL) sequences
  *  Windows end of line sequence:  \r\n
  *  Unix end of line sequence: \n
  *  Mac end of line sequence: \r
  */
-
-
 
 /**
  * Moves the file pointer to the begining of the current line.
  * 
  * If on the first line moves the pointer to 0.
  * 
- * Any other line the pointer will be moved to the character following the previous line's "\n"
+ * Any other line the pointer will be moved to the character following the previous line's EOL sequence as defined at 
+ * in this files header.
  * 
- * The "\n" at the end of a line is considered part of that line.
+ * The EOL is considered part of that line.
  * 
  * @param resource $handle
  *   File handle.
@@ -33,20 +32,38 @@
  * @return int
  *   The file position
  */
-function file_line_start($handle) {
-  $c = fpeekc($handle);
-  if ($c == "\n") { // If Starting at the very end of the current line.
-    fseek($handle, -1, SEEK_CUR); // Attempt to jump to the preceeding character.
+function file_line_start($handlem, $read_size = 64) {
+  if (fpeekc($handle) === FALSE) { // If at the EOF
+    file_end($handle); // Ignore pointless read pass EOF.
   }
-  else if ($c === FALSE) { // If at the EOF
-    fseek($handle, -1, SEEK_END); // Attempt to jump to the preceeding character.
-  }
-  do {
-    $c = fungetc($handle); // Walk backwards.
-  } while ($c != "\n" && ftell($handle) != 0);
-  // While we have not reached the end of the previous line, or reached the begining of the file.
-  if (ftell($handle) != 0 && $c == "\n") { // Note the cases where the first character in the file is "\n"
-    fseek($handle, 2, SEEK_CUR); // Move back to "\n" then move passed "\n"
+  do { // Parse a section of the file looking for an EOL character.
+    $pos = ftell($handle);
+    $length = min($pos, $read_size);
+    $last_section = ($pos - $length) == 0;
+    fseek($handle, -$length, SEEK_CUR);
+    /**
+     * Since we are looking for the character immediately following the EOL it not important if we get both 
+     * characters from Windows EOL
+     */
+    $s = fread($handle, $length); // Get section to parse.
+    // Search for the last carriage return in this section
+    $pattern = '/\r[^\r]*$/D'; // Last "\r"
+    $matches = array();
+    preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
+    $carriage_return_pos = isset($matches[0][1]) ? $matches[0][1] : NULL;
+    // Search for the last new line in this section
+    $pattern = '/\n[^\n]*$/D'; // Last "\n"
+    $matches = array();
+    preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
+    $new_line_pos = isset($matches[0][1]) ? $matches[0][1] : NULL;
+    // Check if we found an EOL character
+    $found_at = max($carriage_return_pos, $new_line_pos);
+    // Move to the next section.
+    fseek($handle, -$length, SEEK_CUR);
+  } while (!$found_at && !$last_section);
+  if ($found_at) { // Move pointer to character following the EOL
+    $offset = -($length - $found_at);
+    fseek($handle, $offset, SEEK_CUR);
   }
   return ftell($handle); // Current positon will be the character following the previous lines "\n" or the start of the file
 }
