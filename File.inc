@@ -28,6 +28,8 @@
  * 
  * @param resource $handle
  *   File handle.
+ * @param int $read_size
+ *   The amount to read in at time while searching for an EOL sequence. Tweak for performance.
  * 
  * @return int
  *   The file position
@@ -91,11 +93,13 @@ function file_line_start($handle, $read_size = 64) {
  * 
  * @param resource $handle
  *   File handle.
+ * @param int $read_size
+ *   The amount to read in at time while searching for an EOL sequence. Tweak for performance.
  * 
  * @return int
  *   The file position
  */
-function file_line_end($handle) {
+function file_line_end($handle, $read_size = 64) {
   /**
    * If at the EOF Ignore the cruft and return the EOF positon.
    */
@@ -152,27 +156,7 @@ function file_line_end($handle) {
       return ftell($handle);
     }
   }
-  return ftell($handle); // Current positon will be the character following the previous lines "\n" or the start of the file
-
-
-
-
-  $c = fpeekc($handle);
-  if ($c == "\n") { // If Starting at the very end of the current line exit.
-    return ftell($handle);
-  }
-  else if ($c === FALSE) { // If at the EOF, return to the exact EOF and exit.
-    file_end($handle);
-    return ftell($handle);
-  }
-  do {
-    $c = fgetc($handle);
-  } while ($c != "\n" && $c !== FALSE);
-  // While we have not reached the end of the current line, or reached the end of the file.
-  if ($c == "\n") { // Passed the "\n"
-    fseek($handle, -1, SEEK_CUR); // Move the pointer back to "\n"
-  }
-  return ftell($handle); // Current position will be either "\n" or EOF.
+  return ftell($handle);
 }
 
 /**
