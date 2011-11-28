@@ -257,11 +257,57 @@ function file_move_forward($handle, $lines) {
  *   An array containing the values in each field.
  */
 function file_get_csv($handle, $length = 0, $delimiter = ',', $expected_fields = NULL) {
-  $string = (isset($length) || $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
+  $string = (isset($length) && $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
   if (isset($expected_fields)) {
     $fields = explode($delimiter, $string);
     while (count($fields) < $expected_fields) {
-      $string = (isset($length) || $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
+      $string = (isset($length) && $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
+      $next_line_fields = explode($delimiter, $string);
+      // Merge the last field with the start of this one.
+      $fields[count($fields) - 1] .= array_shift($next_line_fields);
+      $fields = array_merge($fields, $next_line_fields);
+    }
+  }
+  else {
+    $fields = explode($delimiter, $string); // No concern for the number of expected fields.
+  }
+  // Trim the last new line as it is meant to delimit the end of the row.
+  $last_index = count($fields) - 1;
+  $fields[$last_index] = trim($fields[$last_index]);
+  return $fields;
+}
+
+/**
+ * Similar to file_get_csv, except it moves backward though the file rather than forward.
+ * 
+ * Also the number of expected fields can be given in which case the function will read multiple lines 
+ * until it has gotten the all the required fields. This helps deal with files that don't have properly 
+ * escaped newlines. The newlines will be preserved in the returned values.
+ * 
+ * Please check too see if fgetcsv works before using this function as its scope is limituuied, it doesn't deal with 
+ * enclosures or escapes correctly.
+ * 
+ * Note that it is possible for this function to return more fields than expected.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * @param int $length
+ *   The max number of bytes to read from the current line.
+ * @param string $delimiter
+ *   A single character used to delimit the fields in the csv.
+ * @param int $expected_fields
+ *   The number of fields expected to be read for a single line.
+ * 
+ * @return array
+ *   An array containing the values in each field.
+ */
+function file_unget_csv($handle, $length = 0, $delimiter = ',', $expected_fields = NULL) {
+
+  $string = (isset($length) && $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
+  if (isset($expected_fields)) {
+    $fields = explode($delimiter, $string);
+    while (count($fields) < $expected_fields) {
+      $string = (isset($length) && $length > 0) ? fgets($handle, $length) : fgets($handle); // fget will issue a warning if given 0 or NULL for length.
       $next_line_fields = explode($delimiter, $string);
       // Merge the last field with the start of this one.
       $fields[count($fields) - 1] .= array_shift($next_line_fields);
@@ -439,6 +485,34 @@ function fungetc($handle) {
 }
 
 /**
+ * Like fgets() except after getting the current character the file pointer moves backward one instead of forward.
+ * 
+ * Will not wrap around to the end the file.
+ * 
+ * Returns FALSE when the character is EOF.
+ * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * @param int $length
+ *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
+ * 
+ * @return string
+ *   The single character read, or FALSE if EOF or if there is an Error.
+ */
+function fungets($handle, $length = NULL) {
+  $pos = ftell($handle); // Store current position.
+  $line_start_offset = $pos - file_line_start($handle);
+  $length = isset($length) ? min($length, $line_start_offset) : $line_start_offset; // Read from starting position to the start of the line.
+  echo $length;
+  fseek($handle, $pos - $length, SEEK_SET);
+  $s = fpeeks($handle, $length);
+  fseek($handle, -1, SEEK_CUR); // Attempt to Move one character before the start of the line.
+  return $s;
+}
+
+/**
  * Peeks at the current character.
  * 
  * Doesn't move the file pointer.
@@ -474,7 +548,7 @@ function fpeekc($handle) {
  * @param resource $handle
  *   File handle.
  * @param int $length
- *   The max number of bytes to read from the current line.
+ *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
  * 
  * @return string
  *   The single character read, or FALSE if EOF.
