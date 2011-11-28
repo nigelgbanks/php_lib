@@ -4,7 +4,19 @@
  * @file
  *
  * Helper functions for file processing.
+ * 
+ * Notes: 
+ *  Beware of fseek() you can move it to the end of the file or beyond the end of the file, and feof() won't return the 
+ *  correct value as it depends on attempting to 'read' passed the end of the file to work.
+ * 
+ * 
+ * End of line sequences
+ *  Windows end of line sequence:  \r\n
+ *  Unix end of line sequence: \n
+ *  Mac end of line sequence: \r
  */
+
+
 
 /**
  * Moves the file pointer to the begining of the current line.
@@ -22,23 +34,27 @@
  *   The file position
  */
 function file_line_start($handle) {
-  $pos = ftell($handle);
-  $pos = (fpeekc($handle) == "\n") ? $pos - 1 : $pos; // Starting at the very end of the current line, ignore the "\n"
+  $c = fpeekc($handle);
+  if ($c == "\n") { // If Starting at the very end of the current line.
+    fseek($handle, -1, SEEK_CUR); // Attempt to jump to the preceeding character.
+  }
+  else if ($c === FALSE) { // If at the EOF
+    fseek($handle, -1, SEEK_END); // Attempt to jump to the preceeding character.
+  }
   do {
-    fseek($handle, $pos, SEEK_SET);
-    $c = fgetc($handle);
-    $pos = $pos - 1;
-  } while ($c != "\n" && $pos != -2);
-  // While we have not reached the end of the previous line 
-  // or passed the begining of the file.
-  if (feof($handle)) { // Wrapped the document set back to start.
-    fseek($handle, 0, SEEK_SET);
+    $c = fungetc($handle); // Walk backwards.
+  } while ($c != "\n" && ftell($handle) != 0);
+  // While we have not reached the end of the previous line, or reached the begining of the file.
+  if (ftell($handle) != 0 && $c == "\n") { // Note the cases where the first character in the file is "\n"
+    fseek($handle, 2, SEEK_CUR); // Move back to "\n" then move passed "\n"
   }
   return ftell($handle); // Current positon will be the character following the previous lines "\n" or the start of the file
 }
 
 /**
  * Moves the file pointer to the end of the current line, or the end of the file if not "\n" is found.
+ * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
  * 
  * @param resource $handle
  *   File handle.
@@ -47,14 +63,21 @@ function file_line_start($handle) {
  *   The file position
  */
 function file_line_end($handle) {
-  $pos = ftell($handle);
+  $c = fpeekc($handle);
+  if ($c == "\n") { // If Starting at the very end of the current line exit.
+    return ftell($handle);
+  }
+  else if ($c === FALSE) { // If at the EOF, return to the exact EOF and exit.
+    file_end($handle);
+    return ftell($handle);
+  }
   do {
-    fseek($handle, $pos, SEEK_SET);
-    $c = fpeekc($handle);
-    $pos = $pos + 1;
-  } while ($c != "\n" && !feof($handle));
-  // While we have not reached the end of the current line
-  // or the end of the file.
+    $c = fgetc($handle);
+  } while ($c != "\n" && $c !== FALSE);
+  // While we have not reached the end of the current line, or reached the end of the file.
+  if ($c == "\n") { // Passed the "\n"
+    fseek($handle, -1, SEEK_CUR); // Move the pointer back to "\n"
+  }
   return ftell($handle); // Current position will be either "\n" or EOF.
 }
 
@@ -63,6 +86,8 @@ function file_line_end($handle) {
  * 
  * This function can wrap the file, if called on the first line of the file the file pointer
  * will be placed at the last line of the file.
+ * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
  * 
  * @param resource $handle
  *   File handle.
@@ -83,6 +108,8 @@ function file_line_prev($handle) {
  * This function can wrap the file, if called on the last line of the file the file pointer
  * will be placed at the first line of the file.
  * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
+ * 
  * @param resource $handle
  *   File handle.
  * 
@@ -92,14 +119,19 @@ function file_line_prev($handle) {
 function file_line_next($handle) {
   $pos = file_line_end($handle);
   $pos = feof($handle) ? 0 : $pos + 1; // Return to start or skip the "\n" onto the next line
-  fseek($handle, $pos, SEEK_SET);
+
+  fseek($handle, $pos, SEEK_SET); // fseek not appropriate as a 'read' function is not called afterward.
   return ftell($handle);
 }
 
 /**
- * Moves the file pointer back the given number of $lines.
+ * Moves the file pointer back the given number of $lines. 
+ * 
+ * The file pointer will be at the begining of the destination line.
  * 
  * This function won't wrap the file, if the begining of the file is reached the function exits.
+ * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
  * 
  * @param resource $handle
  *   File handle.
@@ -124,7 +156,11 @@ function file_move_back($handle, $lines) {
 /**
  * Moves the file pointer forward the given number of $lines.
  * 
+ * The file pointer will be at the begining of the destination line.
+ * 
  * This function won't wrap the file, if the end of the file is reached the function exits.
+ * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
  * 
  * @param resource $handle
  *   File handle.
@@ -136,11 +172,10 @@ function file_move_back($handle, $lines) {
  */
 function file_move_forward($handle, $lines) {
   $pos = file_line_start($handle);
-  if ($pos != 0) {
-    for ($i = 0; $i < $lines; $i++) {
-      if (($pos = file_line_next($handle)) == 0) {
-        break;
-      }
+  for ($i = 0; $i < $lines; $i++) {
+    if (($pos = file_line_next($handle)) == 0) {
+      file_line_prev($handle);
+      break;
     }
   }
   return ftell($handle);
@@ -192,22 +227,87 @@ function file_get_csv($handle, $length = 0, $delimiter = ',', $expected_fields =
 }
 
 /**
+ * Moves the file pointer to the start of the file.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * 
+ * @return boolean
+ *   TRUE if successful, FALSE otherwise.
+ */
+function file_start($handle) {
+  return fseek($handle, 0, SEEK_SET) == 0;
+}
+
+/**
+ * Moves the file pointer to the end of the file.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * 
+ * @return boolean
+ *   TRUE if successful, FALSE otherwise.
+ */
+function file_end($handle) {
+  return fseek($handle, 0, SEEK_END) == 0;
+}
+
+/**
+ * feof() only works after a 'read' call like fgetc(), so functions like fseek() will invalidated it.
+ * 
+ * This function will work the same as feof() except it does not require a 'read' call before.
+ * 
+ * @param resource $handle
+ *   File handle.
+ */
+function file_eof($handle) {
+  $pos = ftell($handle);
+  $c = fgetc($handle);
+  fseek($handle, $pos, SEEK_SET);
+  return $c === FALSE;
+}
+
+/**
+ * Like fgetc() except after getting the current character the file pointer moves backward one instead of forward.
+ * 
+ * Will not wrap around to the end the file.
+ * 
+ * Returns FALSE when the character is EOF.
+ * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
+ * 
+ * @param resource $handle
+ *   File handle.
+ * 
+ * @return string
+ *   The single character read, or FALSE if EOF.
+ */
+function fungetc($handle) {
+  $c = fpeekc($handle);
+  fseek($handle, -1, SEEK_CUR); // Attempt to move to the previous character.
+  return $c;
+}
+
+/**
  * Peeks at the current character.
  * 
  * Doesn't move the file pointer.
  * 
  * Returns FALSE when the character is EOF.
  * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
+ * 
  * @param resource $handle
  *   File handle.
+ * 
  * @return string
  *   The single character read, or FALSE if EOF.
  */
 function fpeekc($handle) {
   $pos = ftell($handle);
-  $char = fgetc($handle);
+  $c = fgetc($handle);
   fseek($handle, $pos, SEEK_SET);
-  return $char;
+  return $c;
 }
 
 /**
@@ -219,6 +319,8 @@ function fpeekc($handle) {
  * or on EOF (whichever comes first). If no length is specified, it will keep reading from the stream until 
  * it reaches the end of the line.
  * 
+ * feof() will not work immeditely after this function is called. Use file_eof() instead.
+ * 
  * @param resource $handle
  *   File handle.
  * @param int $length
@@ -229,7 +331,7 @@ function fpeekc($handle) {
  */
 function fpeeks($handle, $length = NULL) {
   $pos = ftell($handle);
-  $string = isset($length) ? fgets($handle, $length) : fgets($handle);
+  $s = isset($length) ? fgets($handle, $length) : fgets($handle);
   fseek($handle, $pos, SEEK_SET);
-  return $string;
+  return $s;
 }
