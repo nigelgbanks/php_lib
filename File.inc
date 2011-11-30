@@ -314,12 +314,7 @@ function file_unget_csv($handle, $length = 0, $delimiter = ',', $expected_fields
   $fields = explode($delimiter, $string);
   if (isset($expected_fields) && $length == 0) { // Doesn't support length with $expected fields.
     while (count($fields) < $expected_fields) {
-      $pos = ftell($handle);
-      $print = TRUE;
       if (($string = fungets($handle)) == FALSE) {
-        $pos = ftell($handle);
-        $l = implode('|', $fields);
-        watchdog('file', "Failed: $pos, String: $l");
         break;
       }
       $next_line_fields = explode($delimiter, $string);
@@ -332,10 +327,6 @@ function file_unget_csv($handle, $length = 0, $delimiter = ',', $expected_fields
   $last_index = count($fields) - 1;
   $fields[$last_index] = trim($fields[$last_index]);
   $pos = ftell($handle);
-  if (isset($print)) {
-    $l = implode('|', $fields);
-    watchdog('file', "Succeed: $pos, String: $l");
-  }
   return $fields;
 }
 
