@@ -1,7 +1,7 @@
 name = PHP Lib
 description = A collection of interfaces classes and functions that can be used in a variety of environments.
 files[] = tests/Array.test
-version = 11.3beta2
+version = 11.3beta3
 package = Islandora Dependencies
 core = 6.x
 php = 5.2
