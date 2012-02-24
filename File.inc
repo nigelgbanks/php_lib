@@ -545,7 +545,7 @@ function fpeekc($handle) {
 /**
  * Peeks at the current line.
  * 
- * Doesn't move the file pointer.
+ * Unlike fgets this function doesn't move the file pointer.
  * 
  * Reading ends when length - 1 bytes have been read, on a newline (which is included in the return value), 
  * or on EOF (whichever comes first). If no length is specified, it will keep reading from the stream until 
