@@ -40,20 +40,17 @@ class PHPLib_File_TestCase extends DrupalUnitTestCase {
   }
 
   /**
-   * Test constructing the Form definition.
+   * Test fpeeks.
    */
   public function test_fpeeks() {
     $handle = fopen("{$this->data_path}/peek.txt", 'r');
-    /**
-     * File pointer shouldn't move when starting from the begining.
-     */
     $line_check = "1st line\n";
     $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), 0, 'fpeek didnt move the file pointer from start.');
-    $this->assertEqual($line, $line_check, 'fpeek returned the correct value for the first line.');
+    $this->assertEqual(ftell($handle), 0, 'fpeeks didnt move the file pointer from start.');
+    $this->assertEqual($line, $line_check, 'fpeeks returned the correct value for the first line.');
     $line_one_len = strlen($line_check);
     $line = fpeeks($handle, 1);
-    $this->assertEqual($line, '', 'fpeek read 0 bytes.');
+    $this->assertEqual($line, '', 'fpeeks read 0 bytes.');
     $successful = TRUE;
     for ($i = 1; $i <= $line_one_len; $i++) {
       $line = fpeeks($handle, $i + 1);
@@ -62,21 +59,51 @@ class PHPLib_File_TestCase extends DrupalUnitTestCase {
         break;
       }
     }
-    $this->assert($successful, 'fpeek read the correct value, when the length parameter was provided.');
+    $this->assert($successful, 'fpeeks read the correct value, when the length parameter was provided.');
     $line_check = "2nd line\n";
     fgets($handle); // Reads in the first line.
     $pos = ftell($handle);
     $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeek didnt move the file pointer from middle.');
-    $this->assertEqual($line, $line_check, 'fpeek returned the correct value for the second line.');
+    $this->assertEqual(ftell($handle), $pos, 'fpeeks didnt move the file pointer from middle.');
+    $this->assertEqual($line, $line_check, 'fpeeks returned the correct value for the second line.');
     fseek($handle, -1, SEEK_END);
     $pos = ftell($handle);
     $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeek didnt move the file pointer to the eof.');
+    $this->assertEqual(ftell($handle), $pos, 'fpeeks didnt move the file pointer to the eof.');
     fseek($handle, 0, SEEK_END);
     $pos = ftell($handle);
     $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeek didnt move the file pointer passed the eof.');
+    $this->assertEqual(ftell($handle), $pos, 'fpeeks didnt move the file pointer passed the eof.');
+    fclose($handle);
+  }
+
+  /**
+   * Test fpeekc.
+   */
+  public function test_fpeekc() {
+    $handle = fopen("{$this->data_path}/peek.txt", 'r');
+    /**
+     * File pointer shouldn't move when starting from the begining.
+     */
+    $char_check = "1";
+    $char = fpeekc($handle);
+    $this->assertEqual(ftell($handle), 0, 'fpeekc didnt move the file pointer from start.');
+    $this->assertEqual($char, $char_check, 'fpeekc returned the correct value for the first character.');
+    $char_check = "s";
+    fgets($handle, 2);
+    $pos = ftell($handle);
+    $char = fpeekc($handle);
+    $this->assertEqual(ftell($handle), $pos, 'fpeekc didnt move the file pointer from middle.');
+    $this->assertEqual($char, $char_check, 'fpeekc returned the correct value for the second line.');
+    fseek($handle, -1, SEEK_END);
+    $pos = ftell($handle);
+    $char = fpeeks($handle);
+    $this->assertEqual(ftell($handle), $pos, 'fpeekc didnt move the file pointer to the eof.');
+    fseek($handle, 0, SEEK_END);
+    $pos = ftell($handle);
+    $char = fpeeks($handle);
+    $this->assertEqual(ftell($handle), $pos, 'fpeekc didnt move the file pointer passed the eof.');
+    fclose($handle);
   }
 
 }
