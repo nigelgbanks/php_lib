@@ -17,6 +17,344 @@
  */
 
 /**
+ * Object Oriented file processing. 
+ */
+class File {
+
+  /**
+   * File pointer resource.
+   * 
+   * @var resource
+   */
+  protected $handle;
+
+  /**
+   * Frequently we need to save the current pointer do some processing then return to the old pointer positon this 
+   * instance variable a LIFO used to achieve that.
+   * 
+   * @var array
+   */
+  protected $posStack;
+
+  /**
+   * Creates a File instance.
+   * 
+   * Takes the same parameters as fopen()
+   *
+   * For the latest documentation
+   * @see http://php.net/manual/en/function.fopen.php
+   */
+  public function __construct($filename, $mode, $use_include_path = false, $context = NULL) {
+    $this->handle = isset($context) ?
+        fopen($filename, $mode, $use_include_path, $context) :
+        fopen($filename, $mode, $use_include_path); // Deals with warning of passing a NULL when resource is expected.
+    if ($this->handle === FALSE) {
+      throw new ErrorException("Failed to open file $filename", 0, E_ERROR);
+    }
+  }
+
+  /**
+   * Clean up the allocated file for this class.
+   */
+  public function __destruct() {
+    fclose($this->handle);
+  }
+
+  /**
+   * Gets the file pointer resource this class wraps. Be careful when using this function as your leaving the safety 
+   * this class provides by wrapping PHP file functions.
+   *
+   * @return resource
+   */
+  public function getHandle() {
+    return $this->handle;
+  }
+
+  /**
+   * Gets dynamic variables for this class.
+   * 
+   * "pos": 
+   *   The position of the file pointer referenced by handle as an integer; i.e., its offset 
+   *   into the file stream. If an error occurs, returns FALSE.
+   * 
+   * @param string $name 
+   */
+  public function __get($name) {
+    if ($name == 'pos') {
+      return ftell($this->getHandle());
+    }
+    throw new InvalidArgumentException("$name isn't a property of the File class", 0);
+  }
+
+  /**
+   * Sets the position of the file pointer.
+   * 
+   * @param int $offset
+   *   An offset in bytes to move the pointer from the specified $whence value. 
+   *   Can be positve or negative.
+   * @param int $whence
+   *   The context in which to evaluate the given $offset. The excepted values are:
+   *    SEEK_SET - Set position equal to offset bytes.
+   *    SEEK_CUR - Set position to current location plus offset.
+   *    SEEK_END - Set position to end-of-file plus offset.
+   * 
+   * @return int
+   *   TRUE if the seek succeeded, FALSE otherwise.
+   */
+  public function seek($offset = NULL, $whence = SEEK_SET) {
+    return fseek($this->handle, $offset, $whence) == 0;
+  }
+
+  /**
+   * Checks to see if the file pointer is at the begining of the file.
+   * 
+   * @return boolean
+   *   TRUE if this position is at the start of the file FALSE otherwise.
+   */
+  public function start() {
+    return $this->pos == 0;
+  }
+
+  /**
+   * Checks if the file pointer is on EOL character. 
+   * 
+   * End of line (EOL) sequences
+   *  Windows end of line sequence:  "\r\n"
+   *  Unix end of line sequence: "\n"
+   *  Mac end of line sequence: "\r"
+   * 
+   * @return boolean 
+   *   TRUE if the file pointer is on a EOL character FALSE otherwise.
+   */
+  public function EOL() {
+    return array_search($this->peekc(), array("\r", "\n")) !== FALSE;
+  }
+
+  /**
+   * If the file pointer is on an EOL character(s) move it infront of the EOL character(s).
+   * 
+   * Only runs once in that if you have multiple lines with only EOL characters on them this 
+   * will only move back one line.
+   * 
+   * Exceptional cases: 
+   *  Can't move before positon 0, will move to position 0 though.
+   * 
+   * @return int
+   *   The current position.
+   */
+  public function seekBeforeEOL() {
+    $eol = array("\n", "\r");
+    foreach ($eol as $c) {
+      if ($this->peekc() == $c) {
+        $this->seek(-1, SEEK_CUR);
+      }
+    }
+    return $this->pos;
+  }
+
+  /**
+   * If the file pointer is on an EOL character(s) move it past the EOL character(s).
+   * 
+   * Only runs once in that if you have multiple lines with only EOL characters on them this 
+   * will only move forward one line.
+   * 
+   * @return int
+   *   The current position.
+   */
+  public function seekAfterEOL() {
+    $eol = array("\r", "\n");
+    foreach ($eol as $c) {
+      if ($this->peekc() == $c) {
+        $this->seek(1, SEEK_CUR);
+      }
+    }
+    return $this->pos;
+  }
+
+  /**
+   * Checks if the file pointer is on EOF character. 
+   * 
+   * @return boolean 
+   *   TRUE if the file pointer is on a EOF character FALSE otherwise.
+   */
+  public function EOF() {
+    /**
+     * feof() is not always return TRUE when the file pointer is on the EOF character. It requires an attempt 
+     * to read the EOF character to be set, and will not be set if you simply seek to the EOF character.
+     */
+    return $this->peekc() === FALSE;
+  }
+
+  /**
+   * Moves the pointer the start of the line in which it currently is on. 
+   * 
+   * If we are to think of the file as a single stream of characters, going left to right.
+   * The start of the line is defined as the leftmost character including the current position 
+   * that is not the previous lines EOL character if there is no previous line then its position 0.
+   *
+   * @return int
+   *   The current position.
+   */
+  public function seekLineStart() {
+    if ($this->EOF()) {
+      $this->seek(0, SEEK_END); // Make sure the pointer isn't passed the EOF.
+    }
+    $this->seekBeforeEOL(); // If we are on the EOL character for our line move infront of it.
+    /**
+     * Now on a non-EOL character of this line or in the case where this line 
+     * is only an EOL character(s) the previous lines EOL character. Or in the case 
+     * where this line is the first line and is only an EOL character we are at position 0
+     */
+    do {
+      /**
+       * Note that this could be speed up by reading large chunks of the file and then 
+       * processing them but this is easier/safer for the moment.
+       */
+      if ($this->EOL() && !$this->start()) { // We are on the previous line, move back to our line
+        $this->seek(1, SEEK_CUR); // Leftmost that is not EOL
+        break;
+      }
+    } while ($this->seek(-1, SEEK_CUR)); // Keep looking for the previous line.
+    return $this->pos;
+  }
+
+  /**
+   * Moves the pointer the end of the line in which it currently is on.
+   * 
+   * If we are to think of the file as a single stream of characters, going left to right.
+   * The end of the line is defined as the rightmost character including the current position 
+   * that is the last EOL character in the set of EOL character that define a line ending. As defined below.
+   * 
+   * Exceptional cases:
+   *  If there is no EOL character on the current line only a EOF character this function will move to the EOF position.
+   *  If the file pointer is pass the EOF character, this function will return the pointer to the EOF character.
+   * 
+   * End of line (EOL) sequences
+   *  Windows end of line sequence:  "\r\n"
+   *  Unix end of line sequence: "\n"
+   *  Mac end of line sequence: "\r"
+   * 
+   * @return int
+   *   The current position.
+   */
+  public function seekLineEnd() {
+    if ($this->fgets() != FALSE) {
+      $this->seek(-1, SEEK_CUR); // Move back onto the EOL
+    }
+    return $this->pos;
+  }
+
+  /**
+   * Seeks to the end of previous line.
+   * 
+   * Exceptional cases:
+   *  If the file pointer is on the first line it will be moved to positon 0.
+   * @return int
+   *   The current position.
+   */
+  public function seekPrevLineEnd() {
+    $this->seekLineStart();
+    $this->seek(-1, SEEK_CUR); // Move to previous line, if position is 0 nothing happens.
+    return $this->pos;
+  }
+
+  /**
+   * Seeks to the beginning of previous line.
+   * 
+   * @return int
+   *   The current position.
+   */
+  public function seekPrevLineStart() {
+    $this->seekPrevLineEnd();
+    return $this->seekLineStart();
+  }
+
+  /**
+   * Seeks to the beginning of previous line.
+   * 
+   * @return int
+   *   The current position.
+   */
+  public function seekNextLineStart() {
+    $this->seekLineEnd();
+    if (!$this->EOF()) { // Don't move pass the EOF
+      $this->seek(1, SEEK_CUR);
+    }
+    return $this->pos;
+  }
+
+  /**
+   * Seeks to the end of previous line.
+   * 
+   * Exceptional cases:
+   *  If the file pointer is on the first line it will be moved to positon 0.
+   * @return int
+   *   The current position.
+   */
+  public function seekNextLineEnd() {
+    $this->seekNextLineStart();
+    return $this->seekLineEnd();
+  }
+
+  /**
+   * Peeks at the current character.
+   * 
+   * @return string
+   *   The single character the file pointer is currently pointing at. FALSE when the character is EOF.
+   */
+  public function peekc() {
+    $this->pushPos();
+    $c = fgetc($this->handle);
+    $this->popPos();
+    return $c;
+  }
+
+  /**
+   * Peeks at the current line.
+   * 
+   * Reading ends when length - 1 bytes have been read, on a newline (which is included in the return value), 
+   * or on EOF (whichever comes first). If no length is specified, it will keep reading from the stream until 
+   * it reaches the end of the line.
+   *
+   * @param int $length
+   *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
+   * 
+   * @return string
+   *   The current line up to the given $length -1 or the last EOL character encounter, or FALSE if EOF.
+   */
+  function fpeeks($length = 0) {
+    $this->pushPos();
+    $s = $length > 0 ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
+    $this->popPos();
+    return $s;
+  }
+
+  /**
+   * Pushes the current positon onto the stack.
+   * 
+   * @return int
+   *   The current positon.
+   */
+  private function pushPos() {
+    return $this->posStack[] = $this->pos;
+  }
+
+  /**
+   * Pops the last position of the stack.
+   *
+   * @return int
+   *   The current position.
+   */
+  private function popPos() {
+    if (empty($this->posStack)) {
+      return FALSE;
+    }
+    return $this->seek(array_pop($this->posStack));
+  }
+
+}
+
+/**
  * Moves the file pointer to the begining of the current line.
  * 
  * If on the first line moves the pointer to 0.
@@ -42,7 +380,7 @@ function file_line_start($handle, $read_size = 64) {
   if (file_eof($handle)) {
     file_end($handle);
   }
-  // Ignore the eol that we are currently sitting on as its part of the current line.
+// Ignore the eol that we are currently sitting on as its part of the current line.
   file_move_before_eol($handle);
   if (ftell($handle) == 0) { // Already at the start of a line by definition.
     return 0; // Ignore all other processing.
@@ -57,19 +395,19 @@ function file_line_start($handle, $read_size = 64) {
      * characters from Windows EOL
      */
     $s = fread($handle, $length); // Get section to parse.
-    // Search for the last carriage return in this section
+// Search for the last carriage return in this section
     $pattern = '/\r[^\r]*$/D'; // Last "\r"
     $matches = array();
     preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
     $carriage_return_pos = isset($matches[0][1]) ? $matches[0][1] : NULL;
-    // Search for the last new line in this section
+// Search for the last new line in this section
     $pattern = '/\n[^\n]*$/D'; // Last "\n"
     $matches = array();
     preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
     $new_line_pos = isset($matches[0][1]) ? $matches[0][1] : NULL;
-    // Check if we found an EOL character
+// Check if we found an EOL character
     $found_at = max($carriage_return_pos, $new_line_pos);
-    // Move to the next section.
+// Move to the next section.
     fseek($handle, -$length, SEEK_CUR);
   } while (!$found_at && !$last_section);
   if ($found_at) { // Move pointer to character following the EOL
@@ -108,17 +446,17 @@ function file_line_end($handle, $read_size = 64) {
     $length = min($remaining, $read_size);
     $last_section = ($remaining - $length) == 0;
     $s = fread($handle, $length); // Get section to parse.
-    // Search for the first carriage return in this section
+// Search for the first carriage return in this section
     $pattern = '/^[^\r]*(\r)/D'; // First "\r"
     $matches = array();
     preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
     $carriage_return_pos = isset($matches[1][1]) ? $matches[1][1] : NULL;
-    // Search for the first new line in this section
+// Search for the first new line in this section
     $pattern = '/^[^\n]*(\n)/D'; // First "\n"
     $matches = array();
     preg_match($pattern, $s, $matches, PREG_OFFSET_CAPTURE);
     $new_line_pos = isset($matches[1][1]) ? $matches[1][1] : NULL;
-    // Check if we found an EOL character
+// Check if we found an EOL character
     $found_at = min($carriage_return_pos, $new_line_pos);
   } while (!$found_at && !$last_section);
   if ($found_at) { // Move pointer to character following the EOL
@@ -318,12 +656,12 @@ function file_unget_csv($handle, $length = 0, $delimiter = ',', $expected_fields
         break;
       }
       $next_line_fields = explode($delimiter, $string);
-      // Merge the last field with the start of this one.
+// Merge the last field with the start of this one.
       $next_line_fields[count($next_line_fields) - 1] .= array_shift($fields);
       $fields = array_merge($next_line_fields, $fields);
     }
   }
-  // Trim the last new line as it is meant to delimit the end of the row.
+// Trim the last new line as it is meant to delimit the end of the row.
   $last_index = count($fields) - 1;
   $fields[$last_index] = trim($fields[$last_index]);
   return $fields;
@@ -365,15 +703,10 @@ function file_end($handle) {
  *   The file position
  */
 function file_move_before_eol($handle) {
-  /**
-   * If we are at the EOL of our current line ignore it. Notice the order since we are moving backward check for 
-   * "\n" before "\r" to catch all cases of EOL.
-   */
-  if (fpeekc($handle) == "\n") {
-    fseek($handle, -1, SEEK_CUR);
-  }
-  if (fpeekc($handle) == "\r") {
-    fseek($handle, -1, SEEK_CUR);
+  if (file_eol($handle)) { // EOL Character found.
+    if (fseek($handle, -1, SEEK_CUR)) { // fseek may fail 
+      file_move_before_eol($handle);
+    }
   }
   return ftell($handle);
 }
@@ -506,7 +839,7 @@ function fungetc($handle) {
  *   will return $length - 1 characters.
  * 
  * @return string
- *   The single character read, or FALSE if EOF or if there is an Error.
+ *   The read characters, or FALSE if EOF or if there is an Error.
  */
 function fungets($handle, $length = 0) {
   $pos = ftell($handle); // Store current position.
