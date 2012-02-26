@@ -79,7 +79,6 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
       $file->seek($i);
       if ($file->seekAfterDelimiter() !== $values[$i]) {
         $successful = FALSE;
-        error_log($content[$i]);
         $this->assert($successful, t('DelimitedFile::seekAfterDelimiter() incorrectly moved to "%actual" expected "%expected"', array(
               '%actual' => $file->pos,
               '%expected' => $values[$i]))
@@ -101,12 +100,15 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
     $file = new DelimitedFile($this->filename, 'r', FALSE, NULL, $delimiters);
     $successful = TRUE;
     foreach ($values as $value) {
-      if (strcmp($file->getField(), $value)) {
+      $field = $file->getField();
+      if (strcmp($field, $value)) {
         $successful = FALSE;
-        $this->assert($successful, t('DelimitedFile::getField() failed to get field "%field"', array('%field' => $value)));
+        $this->assert($successful, t('DelimitedFile::getField() failed to get field "%expected" returned "%actual"', array(
+              '%expected' => $value,
+              '%actual' => $field))
+        );
         break;
       }
-      $file->seek(1, SEEK_CUR);
     }
     $this->assert($successful, "DelimitedFile::getField() Correctly identified all fields.");
     unset($file); // Destroy the reference to the file.
