@@ -333,11 +333,10 @@ class TextFile extends File {
    *   The current position.
    */
   public function seekBeforeEOL() {
-    $eol = array("\n", "\r");
-    foreach ($eol as $c) {
-      if ($this->peekc() == $c) {
-        $this->seek(-1, SEEK_CUR);
-      }
+    if ($this->EOL()) {
+      $c = $this->peekc();
+      $move = ($this->format & self::DOS) && strcasecmp($c, "\n") ? 2 : 1; // DOS is the only two character EOL.
+      $this->seek(-$move, SEEK_CUR);
     }
     return $this->pos;
   }
@@ -352,11 +351,10 @@ class TextFile extends File {
    *   The current position.
    */
   public function seekAfterEOL() {
-    $eol = array("\r", "\n");
-    foreach ($eol as $c) {
-      if ($this->peekc() == $c) {
-        $this->seek(1, SEEK_CUR);
-      }
+    if ($this->EOL()) {
+      $c = $this->peekc();
+      $move = ($this->format & self::DOS) && strcasecmp($c, "\r") ? 2 : 1; // DOS is the only two character EOL.
+      $this->seek($move, SEEK_CUR);
     }
     return $this->pos;
   }
@@ -414,9 +412,20 @@ class TextFile extends File {
    *   The current position.
    */
   public function seekLineEnd() {
-    if ($this->fgets() != FALSE) {
-      $this->seek(-1, SEEK_CUR); // Move back onto the EOL
+    if ($this->EOF()) {
+      $this->seek(0, SEEK_END); // Make sure the pointer isn't passed the EOF.
     }
+    do {
+      /**
+       * Note that this could be speed up by reading large chunks of the file and then
+       * processing them but this is easier/safer for the moment.
+       */
+      if ($this->EOL()) { // We are on the previous line, move back to our line
+        $this->seekAfterEOL();
+        $this->seek(-1, SEEK_CUR); // Last EOL Character
+        break;
+      }
+    } while ($this->seek(1, SEEK_CUR)); // Keep looking for the end of this line.
     return $this->pos;
   }
 

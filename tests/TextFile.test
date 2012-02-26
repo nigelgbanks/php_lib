@@ -106,4 +106,26 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $this->assert($successful, "TextFile::EOL() Correctly identified all UNIX|DOC EOL.");
     unset($file); // Destroy the reference to the file.
   }
+
+  public function test_seekBeforeEOL() {
+    $content = "a|b\nc\r\nd";
+    $this->writeToFile($content);
+    $values = array(0, 1, 2, 2, 4, 5, 5, 7, 7); // Includes EOF delimiter
+    $file = new TextFile($this->filename, 'r', FALSE, NULL);
+    $successful = TRUE;
+    for ($i = 0; $i < strlen($content); $i++) {
+      $file->seek($i);
+      if ($file->seekBeforeEOL() !== $values[$i]) {
+        $successful = FALSE;
+        $this->assert($successful, t('TextFile::seekBeforeEOL() incorrectly moved to "%actual" expected "%expected"', array(
+              '%actual' => $file->pos,
+              '%expected' => $values[$i]))
+        );
+        break;
+      }
+    }
+    $this->assert($successful, "TextFile::seekBeforeEOL() Correctly seeked before all EOL.");
+    unset($file); // Destroy the reference to the file.
+  }
+
 }
