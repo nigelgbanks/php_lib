@@ -130,18 +130,6 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
     $file->rewind();
     $fields = $file->getFields(count($values));
     $this->assertEqual($fields, $values, t('DelimitedFile::getFields() retrieved all fields.'));
-    foreach ($values as $value) {
-      $field = $file->getField();
-      if (strcmp($field, $value)) {
-        $successful = FALSE;
-        $this->assert($successful, t('DelimitedFile::getField() failed to get field "%expected" returned "%actual"', array(
-              '%expected' => $value,
-              '%actual' => $field))
-        );
-        break;
-      }
-    }
-    $this->assert($successful, "DelimitedFile::getField() Correctly identified all fields.");
     unset($file); // Destroy the reference to the file.
   }
 

@@ -564,7 +564,7 @@ class DelimitedFile extends TextFile {
    */
   public function getFields($count) {
     $fields = array();
-    while (!$this->EOF() && $count == 0) {
+    while (!$this->EOF() && $count != 0) {
       $fields[] = $this->getField();
       $count--;
     }
