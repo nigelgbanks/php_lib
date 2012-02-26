@@ -91,7 +91,34 @@ class File {
     if ($name == 'pos') {
       return ftell($this->getHandle());
     }
-    throw new InvalidArgumentException("$name isn't a property of the File class", 0);
+    throw new InvalidArgumentException("$name isn't a property of " . __CLASS__, 0);
+  }
+
+  /**
+   * Passes calls though to PHP filesystem functions using the file handle.
+   * 
+   * @param string $name
+   *   The function name.
+   * @param array $arguments 
+   *   The arguments to the given function.
+   * 
+   * @return mixed
+   *   Depends on the function called @see the PHP file system docs http://uk.php.net/manual/en/ref.filesystem.php.
+   */
+  public function __call($name, $arguments) {
+    $functions = array('rewind', 'fgetc', 'fgets');
+    $aliases = array(
+      'getc' => 'fgetc',
+      'gets' => 'fgets',
+      'read' => 'fread',
+    ); // Alias for PHP filesystem functions, for cleaner looks.
+    $exists = array_search($name, $functions) !== FALSE; // Function exists
+    $aliased = array_key_exists($name, $aliases);
+    if ($exists || $aliased) {
+      array_unshift($arguments, $this->getHandle()); // Handle is always the first parameter.
+      return call_user_func_array($aliased ? $aliases[$name] : $name, $arguments);
+    }
+    throw new InvalidArgumentException("$name isn't a method of " . __CLASS__, 0);
   }
 
   /**
@@ -106,7 +133,7 @@ class File {
    *    SEEK_CUR - Set position to current location plus offset.
    *    SEEK_END - Set position to end-of-file plus offset.
    *
-   * @return int
+   * @return boolean
    *   TRUE if the seek succeeded, FALSE otherwise.
    */
   public function seek($offset = NULL, $whence = SEEK_SET) {
@@ -168,41 +195,6 @@ class File {
     $s = $length > 0 ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
     $this->pop();
     return $s;
-  }
-
-  /**
-   * Calls fgetc().
-   * 
-   * @return string
-   */
-  function getc() {
-    return fgetc($this->getHandle());
-  }
-
-  /**
-   * Calls fgets().
-   * 
-   * @return string
-   */
-  function gets($length = NULL) {
-    return isset($length) ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
-  }
-
-  /**
-   * Reads up to length bytes from the file pointer referenced by handle. 
-   * 
-   * Reading stops as soon as one of the following conditions is met:
-   *  length bytes have been read
-   *  EOF (end of file) is reached
-   *   
-   * @param int $length
-   *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
-   * 
-   * @return string
-   *   The read bytes.
-   */
-  function read($length) {
-    return fread($this->getHandle(), $length);
   }
 
   /**
@@ -563,34 +555,20 @@ class DelimitedFile extends TextFile {
   }
 
   /**
-   * Gets the next delimited field.
+   * Gets a number of fields up to max $count if they exist.
    * 
-   * @return string
-   *   The next delimited field if possible, otherwise FALSE.
-   */
-  public function getNextField() {
-    
-  }
-
-  /**
-   * Gets the prev delimited field.
+   * @param int $count 
    * 
-   * @return string
-   *   The next delimited field if possible, otherwise FALSE.
+   * @return array
+   *   The requested fields up to a max of $count.
    */
-  public function getPrevField() {
-    
-  }
-
-  /**
-   * Can't read a single character at a time.
-   */
-  public function getNextFields($count) {
-    
-  }
-
-  public function getPrevFields($count) {
-    
+  public function getFields($count) {
+    $fields = array();
+    while (!$this->EOF() && $count == 0) {
+      $fields[] = $this->getField();
+      $count--;
+    }
+    return $fields;
   }
 
 }

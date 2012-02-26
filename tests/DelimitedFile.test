@@ -114,4 +114,35 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
     unset($file); // Destroy the reference to the file.
   }
 
+  /**
+   * DelimitedFile::getField().
+   */
+  public function test_getfields() {
+    $delimiters = array('|', ',', "\r\n");
+    $this->writeToFile("field one|field\ntwo\r\nfield three,field four");
+    $values = array('field one', "field\ntwo", 'field three', 'field four');
+    $file = new DelimitedFile($this->filename, 'r', FALSE, NULL, $delimiters);
+    $successful = TRUE;
+    $fields = $file->getFields(0);
+    $this->assert(empty($fields), t('DelimitedFile::getFields() didn\'t return any fields for a count of 0.'));
+    $fields = $file->getFields(2);
+    $this->assertEqual(count($fields), 2, t('DelimitedFile::getFields() return the correct number of fields for the request of 2.'));
+    $file->rewind();
+    $fields = $file->getFields(count($values));
+    $this->assertEqual($fields, $values, t('DelimitedFile::getFields() retrieved all fields.'));
+    foreach ($values as $value) {
+      $field = $file->getField();
+      if (strcmp($field, $value)) {
+        $successful = FALSE;
+        $this->assert($successful, t('DelimitedFile::getField() failed to get field "%expected" returned "%actual"', array(
+              '%expected' => $value,
+              '%actual' => $field))
+        );
+        break;
+      }
+    }
+    $this->assert($successful, "DelimitedFile::getField() Correctly identified all fields.");
+    unset($file); // Destroy the reference to the file.
+  }
+
 }
