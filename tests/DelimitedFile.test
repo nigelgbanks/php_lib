@@ -21,7 +21,7 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
    */
   public static function getInfo() {
     return array(
-      'name' => 'File Unit Tests.',
+      'name' => 'DelimintedFile Unit Tests.',
       'description' => 'Unit tests for class DelimitedFile.',
       'group' => 'PHP Lib',
     );
@@ -56,7 +56,7 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
     foreach ($values as $value) {
       if ($file->isDelimiter() !== $value) {
         $successful = FALSE;
-        $this->assert($successful, t('DelimitedFile::isDelimiter() incorrectly identified "%char"', array('%char' => $file->peekc())));
+        $this->assert($successful, t('DelimitedFile::isDelimiter() incorrectly identified "%char"', array('%char' => addcslashes($file->peekc(), "\r\n"))));
         break;
       }
       $file->seek(1, SEEK_CUR);

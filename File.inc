@@ -198,6 +198,26 @@ class File {
   }
 
   /**
+   * Peeks up to $length bytes from the file pointer. 
+   * 
+   * Reading stops as soon as one of the following conditions is met:
+   *   $length bytes have been read
+   *   EOF (end of file) is reached
+   * 
+   * @param int $length
+   *   The max number of bytes to peek.
+   * 
+   * @return string
+   *   The peeked bytes. 
+   */
+  function peek($length) {
+    $this->push();
+    $ret = $this->read($length);
+    $this->pop();
+    return $ret;
+  }
+
+  /**
    * Pushes the current positon onto the stack.
    *
    * @return int
@@ -275,7 +295,29 @@ class TextFile extends File {
    *   TRUE if the file pointer is on a EOL character FALSE otherwise.
    */
   public function EOL() {
-    return array_search($this->peekc(), array("\r", "\n")) !== FALSE;
+    $c = $this->peekc();
+    if (strcmp($c, "\r") == 0) { // Starts with a Carriage Return
+      if ($this->format & self::MAC) {
+        return TRUE;
+      }
+      else if ($this->format & self::DOS) {
+        return strcmp($this->peek(2), "\r\n") == 0;
+      }
+    }
+    else if (strcmp($c, "\n") == 0) {
+      if ($this->format & self::UNIX) {
+        return TRUE;
+      }
+      else if ($this->format & self::DOS) {
+        $this->push();
+        if ($this->seek(-1, SEEK_CUR)) {
+          $ret = strcmp($this->read(2), "\r\n") == 0;
+        }
+        $this->pop();
+        return $ret;
+      }
+    }
+    return FALSE;
   }
 
   /**

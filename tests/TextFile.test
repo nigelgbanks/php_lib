@@ -1,0 +1,109 @@
+<?php
+
+/**
+ * @file
+ *
+ * Unit Tests.
+ */
+
+/**
+ * Unit Tests for the FormControl class.
+ */
+class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
+
+  protected $filename;
+
+  /**
+   * Get Test info.
+   *
+   * @return array
+   *   Properties that are displayed in the test selection form.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'TextFile Unit Tests.',
+      'description' => 'Unit tests for class TextFile.',
+      'group' => 'PHP Lib',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('php_lib');
+    module_load_include('inc', 'php_lib', 'File');
+    $this->filename = file_create_filename("temp", file_directory_temp());
+  }
+
+  public function tearDown() {
+    parent::tearDown();
+    unlink($this->filename);
+  }
+
+  private function writeToFile($content) {
+    $handle = fopen($this->filename, 'w');
+    fwrite($handle, $content);
+    fclose($handle);
+  }
+
+  /**
+   * TextFile::EOL().
+   */
+  public function test_EOL() {
+    $this->writeToFile("a|b\nc\r\nd");
+    $file = new TextFile($this->filename, 'r', FALSE, NULL);
+    // Test UNIX
+    $values = array(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE); // Includes EOF delimiter
+    $successful = TRUE;
+    foreach ($values as $value) {
+      if ($file->EOL() !== $value) {
+        $successful = FALSE;
+        $this->assert($successful, t('TextFile::EOL() incorrectly identified "%char"', array('%char' => addcslashes($file->peekc(), "\r\n"))));
+        break;
+      }
+      $file->seek(1, SEEK_CUR);
+    }
+    $this->assert($successful, "TextFile::EOL() Correctly identified all Unix EOL.");
+    $file->rewind();
+    // Test DOS
+    $file->format = TextFile::DOS;
+    $values = array(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE); // Includes EOF delimiter
+    $successful = TRUE;
+    foreach ($values as $value) {
+      if ($file->EOL() !== $value) {
+        $successful = FALSE;
+        $this->assert($successful, t('TextFile::EOL() incorrectly identified "%char"', array('%char' => addcslashes($file->peekc(), "\r\n"))));
+        break;
+      }
+      $file->seek(1, SEEK_CUR);
+    }
+    $this->assert($successful, "TextFile::EOL() Correctly identified all DOS EOL.");
+    $file->rewind();
+    // Test MAC
+    $file->format = TextFile::MAC;
+    $values = array(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE); // Includes EOF delimiter
+    $successful = TRUE;
+    foreach ($values as $value) {
+      if ($file->EOL() !== $value) {
+        $successful = FALSE;
+        $this->assert($successful, t('TextFile::EOL() incorrectly identified "%char"', array('%char' => addcslashes($file->peekc(), "\r\n"))));
+        break;
+      }
+      $file->seek(1, SEEK_CUR);
+    }
+    $this->assert($successful, "TextFile::EOL() Correctly identified all MAC EOL.");
+    $file->rewind();
+    // Test UNIX | DOS
+    $file->format = TextFile::UNIX | TextFile::DOS;
+    $values = array(FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, FALSE); // Includes EOF delimiter
+    $successful = TRUE;
+    foreach ($values as $value) {
+      if ($file->EOL() !== $value) {
+        $successful = FALSE;
+        $this->assert($successful, t('TextFile::EOL() incorrectly identified "%char"', array('%char' => addcslashes($file->peekc(), "\r\n"))));
+        break;
+      }
+      $file->seek(1, SEEK_CUR);
+    }
+    $this->assert($successful, "TextFile::EOL() Correctly identified all UNIX|DOC EOL.");
+    unset($file); // Destroy the reference to the file.
+  }
+}
