@@ -47,8 +47,7 @@ class File {
   /**
    * Creates a File instance.
    * 
-   * Note that the $handle transfers ownership to this class, 
-   * and should not be closed outside of this class.
+   * Note that the $handle transfers ownership to this class, and should not be closed outside of this class.
    *
    * @param resource $handle
    *   A valid file handle as returned by fopen().
@@ -67,7 +66,9 @@ class File {
    * Clean up the allocated file for this class.
    */
   public function __destruct() {
-    fclose($this->handle);
+    if (isset($this->handle)) {
+      fclose($this->handle);
+    }
   }
 
   /**
@@ -133,9 +134,8 @@ class File {
   public function seek($offset = NULL, $whence = SEEK_SET, $eof = TRUE) {
     $ret = fseek($this->handle, $offset, $whence) == 0;
     if (!$eof && $this->EOF()) { // Not passed EOF
-      if (fseek($this->handle, 0, SEEK_END)) {
-        return FALSE;
-      }
+      fseek($this->handle, 0, SEEK_END);
+      return FALSE;
     }
     return $ret;
   }

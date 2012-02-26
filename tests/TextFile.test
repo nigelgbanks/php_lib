@@ -157,7 +157,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
   public function test_seekLineEnd() {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
-    $values = array(3, 3, 3, 3, 6, 6, 6, 7, 7); // Includes EOF delimiter
+    $values = array(3, 3, 3, 3, 6, 6, 6, 8, 8); // Includes EOF delimiter
     $file = new TextFile(fopen($this->filename, 'rb'));
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
