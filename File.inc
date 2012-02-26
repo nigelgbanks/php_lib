@@ -392,8 +392,6 @@ class File {
 /**
  * Extends File class for processing CSV. Allows multiple delimiters and multicharacter delimiters.
  * 
- * Warning this class currently doesn't support delimited values that contain the same character more than once.
- * 
  * Fields are defined as the string of characters between any delimited values and/or the start/end of the file.
  * 
  * Unlike lines fields do not include there delimiter.
@@ -430,10 +428,17 @@ class DelimitedFile extends File {
    *   TRUE if the file pointer is on a delimiter FALSE otherwise.
    */
   public function isDelimiter() {
-    $this->push();
-    $c = $this->peekc();
     $ret = FALSE;
+    $this->push();
+    if ($this->EOF()) {
+      return TRUE; // EOF is always a delimiter.
+    }
+    $c = $this->peekc();
     foreach ($this->delimiters as $delimiter) {
+      /**
+       * Warning this class currently doesn't support delimited values 
+       * that contain the same character more than once. Due to the use of strpos below.
+       */
       if (($offset = strpos($delimiter, $c)) !== FALSE) {
         $this->push();
         $this->seek(-$offset, SEEK_CUR); // Move to the expected start of the delimiter.
@@ -447,6 +452,31 @@ class DelimitedFile extends File {
     }
     $this->pop();
     return $ret;
+  }
+
+  /**
+   * Moves the pointer after the delimiter if the pointer is currently on one.
+   */
+  public function seekAfterDelimiter() {
+    $c = $this->peekc();
+    foreach ($this->delimiters as $delimiter) {
+      /**
+       * Warning this class currently doesn't support delimited values 
+       * that contain the same character more than once. Due to the use of strpos below.
+       */
+      if (($offset = strpos($delimiter, $c)) !== FALSE) {
+        $length = strlen($delimiter);
+        $this->push();
+        $this->seek(-$offset, SEEK_CUR); // Move to the expected start of the delimiter.
+        $read = $this->read($length);
+        if (strcmp($read, $delimiter) == 0) {
+          $this->seek($length - $offset, SEEK_CUR);
+          break;
+        }
+        $this->pop();
+      }
+    }
+    return $this->pos;
   }
 
   /**
@@ -477,6 +507,7 @@ class DelimitedFile extends File {
     while (!$this->isDelimiter()) {
       $ret .= $this->getc();
     }
+    $this->seekAfterDelimiter();
     return $ret;
   }
 
