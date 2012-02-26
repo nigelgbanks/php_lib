@@ -132,12 +132,20 @@ class File {
    *    SEEK_SET - Set position equal to offset bytes.
    *    SEEK_CUR - Set position to current location plus offset.
    *    SEEK_END - Set position to end-of-file plus offset.
-   *
+   * @param boolean $eof
+   *   Allow this function to seek passed the EOF.
+   * 
    * @return boolean
    *   TRUE if the seek succeeded, FALSE otherwise.
    */
-  public function seek($offset = NULL, $whence = SEEK_SET) {
-    return fseek($this->handle, $offset, $whence) == 0;
+  public function seek($offset = NULL, $whence = SEEK_SET, $eof = TRUE) {
+    $ret = fseek($this->getHandle(), $offset, $whence) == 0;
+    if (!$eof && $this->EOF()) { // Not passed EOF
+      if (fseek($this->getHandle(), 0, SEEK_END)) {
+        return FALSE;
+      }
+    }
+    return $ret;
   }
 
   /**
@@ -261,10 +269,7 @@ class TextFile extends File {
   /**
    * The expected line ending format. 
    * 
-   * Can be mixed of multiple formats as such that the class will
-   * recogize both UNIX and DOS line endings within the same file.
-   * 
-   * Be careful with mixing multiple formats.
+   * Be careful with mixing multiple formats in the same document.
    *
    * @var int
    */
@@ -290,11 +295,14 @@ class TextFile extends File {
    *  Windows end of line sequence:  "\r\n"
    *  Unix end of line sequence: "\n"
    *  Mac end of line sequence: "\r"
+   * 
+   * @param int $format
+   *   Used to return the format discovered.
    *
    * @return boolean
    *   TRUE if the file pointer is on a EOL character FALSE otherwise.
    */
-  public function EOL() {
+  public function EOL(&$format = NULL) {
     $c = $this->peekc();
     if (strcmp($c, "\r") == 0) { // Starts with a Carriage Return
       if ($this->format & self::MAC) {
@@ -321,13 +329,21 @@ class TextFile extends File {
   }
 
   /**
+   * If the file pointer is on an EOL character(s) move it to the last EOL character(s) in the EOL.
+   *
+   * Really only needed for multibyte line endings such as DOS.
+   *
+   * @return int
+   *   The current position.
+   */
+  public function seekLastEOL() {
+    if (($this->format & self::DOS) && $this->EOL()) {
+      $c = $this->peekc();
+    }
+  }
+
+  /**
    * If the file pointer is on an EOL character(s) move it infront of the EOL character(s).
-   *
-   * Only runs once in that if you have multiple lines with only EOL characters on them this
-   * will only move back one line.
-   *
-   * Exceptional cases:
-   *  Can't move before positon 0, will move to position 0 though.
    *
    * @return int
    *   The current position.
@@ -354,7 +370,7 @@ class TextFile extends File {
     if ($this->EOL()) {
       $c = $this->peekc();
       $move = ($this->format & self::DOS) && strcasecmp($c, "\r") ? 2 : 1; // DOS is the only two character EOL.
-      $this->seek($move, SEEK_CUR);
+      $this->seek($move, SEEK_CUR, FALSE); // Don't allow this function to go passed the EOF.
     }
     return $this->pos;
   }
@@ -384,11 +400,11 @@ class TextFile extends File {
        * Note that this could be speed up by reading large chunks of the file and then
        * processing them but this is easier/safer for the moment.
        */
-      if ($this->EOL() && !$this->start()) { // We are on the previous line, move back to our line
-        $this->seek(1, SEEK_CUR); // Leftmost that is not EOL
+      if ($this->EOL()) { // We are on the previous line, move back to our line
+        $this->seekAfterEOL();
         break;
       }
-    } while ($this->seek(-1, SEEK_CUR)); // Keep looking for the previous line.
+    } while ($this->seek(-1, SEEK_CUR)); // Keep looking for the previous line will stop at 0.
     return $this->pos;
   }
 
@@ -420,12 +436,12 @@ class TextFile extends File {
        * Note that this could be speed up by reading large chunks of the file and then
        * processing them but this is easier/safer for the moment.
        */
-      if ($this->EOL()) { // We are on the previous line, move back to our line
-        $this->seekAfterEOL();
+      if ($this->EOL()) { // have we hit the EOL
+        $this->seekEOL();
         $this->seek(-1, SEEK_CUR); // Last EOL Character
         break;
       }
-    } while ($this->seek(1, SEEK_CUR)); // Keep looking for the end of this line.
+    } while ($this->seek(1, SEEK_CUR, FALSE)); // Keep looking for the end of this line stop at EOF.
     return $this->pos;
   }
 
