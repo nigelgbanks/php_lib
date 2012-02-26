@@ -174,5 +174,26 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $this->assert($successful, "TextFile::seekLineEnd() Correctly seeked after all EOL.");
     unset($file); // Destroy the reference to the file.
   }
+  
+  public function test_seekPrevLineEnd() {
+    $content = "a|b\nc\r\nd";
+    $this->writeToFile($content);
+    $values = array(3, 3, 3, 3, 6, 6, 6, 8, 8); // Includes EOF delimiter
+    $file = new TextFile(fopen($this->filename, 'rb'));
+    $successful = TRUE;
+    for ($i = 0; $i < strlen($content); $i++) {
+      $file->seek($i);
+      if ($file->seekLineEnd() !== $values[$i]) {
+        $successful = FALSE;
+        $this->assert($successful, t('TextFile::seekLineEnd() incorrectly moved to "%actual" expected "%expected"', array(
+              '%actual' => $file->pos,
+              '%expected' => $values[$i]))
+        );
+        break;
+      }
+    }
+    $this->assert($successful, "TextFile::seekLineEnd() Correctly seeked after all EOL.");
+    unset($file); // Destroy the reference to the file.
+  }
 
 }

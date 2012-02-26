@@ -37,14 +37,6 @@ class File {
   protected $history;
 
   /**
-   * Controlled value repersent
-   * 
-   * 
-   * @var int
-   */
-  protected $ending;
-
-  /**
    * Creates a File instance.
    * 
    * Note that the $handle transfers ownership to this class, and should not be closed outside of this class.
@@ -81,6 +73,13 @@ class File {
    * @param string $name
    */
   public function __get($name) {
+    switch ($name) {
+      case 'pos':
+        return ftell($this->handle);
+      case 'size':
+        $stats = $this->stat();
+        return $stats['size'];
+    }
     if ($name == 'pos') {
       return ftell($this->handle);
     }
@@ -99,11 +98,12 @@ class File {
    *   Depends on the function called @see the PHP file system docs http://uk.php.net/manual/en/ref.filesystem.php.
    */
   public function __call($name, $arguments) {
-    $functions = array('rewind', 'fgetc', 'fgets');
+    $functions = array('rewind', 'fgetc', 'fgets', 'fstat');
     $aliases = array(
       'getc' => 'fgetc',
       'gets' => 'fgets',
       'read' => 'fread',
+      'stat' => 'fstat',
     ); // Alias for PHP filesystem functions, for cleaner looks.
     $exists = array_search($name, $functions) !== FALSE; // Function exists
     $aliased = array_key_exists($name, $aliases);
@@ -220,25 +220,18 @@ class File {
 
   /**
    * Pushes the current positon onto the stack.
-   *
-   * @return int
-   *   The current positon.
    */
   protected function push() {
-    return $this->history[] = $this->pos;
+    $this->history[] = $this->pos;
   }
 
   /**
    * Pops the last position of the stack.
-   *
-   * @return int
-   *   The current position.
    */
   protected function pop() {
-    if (empty($this->history)) {
-      return FALSE;
+    if (!empty($this->history)) {
+      $this->seek(array_pop($this->history));
     }
-    return $this->seek(array_pop($this->history));
   }
 
 }
@@ -267,6 +260,13 @@ class TextFile extends File {
   protected $format;
 
   /**
+   * The expected line ending value.
+   * 
+   * @var string
+   */
+  protected $ending;
+
+  /**
    * Creates a TextFile instance.
    *
    * @param resource $handle
@@ -279,10 +279,12 @@ class TextFile extends File {
    */
   public function __construct($handle, $format = self::UNIX) {
     parent::__construct($handle);
-    if ($format != self::UNIX && $format != self::DOS && $format != self::MAC) {
+    $endings = array(self::UNIX => "\n", self::DOS => "\r\n", self::MAC => "\r");
+    if (!array_key_exists($format, $endings)) {
       throw new InvalidArgumentException(t('Invalid format given for ' . __CLASS__));
     }
     $this->format = $format;
+    $this->ending = $endings[$format];
   }
 
   /**
@@ -325,7 +327,6 @@ class TextFile extends File {
         $this->seek(1, SEEK_CUR);
       }
     }
-    return $this->pos;
   }
 
   /**
@@ -440,8 +441,7 @@ class TextFile extends File {
    */
   public function seekPrevLineEnd() {
     $this->seekLineStart();
-    $this->seek(-1, SEEK_CUR); // Move to previous line, if position is 0 nothing happens.
-    return $this->pos;
+    return $this->seek(-1, SEEK_CUR); // Move to previous line, if position is 0 nothing happens.
   }
 
   /**
@@ -480,6 +480,33 @@ class TextFile extends File {
   public function seekNextLineEnd() {
     $this->seekNextLineStart();
     return $this->seekLineEnd();
+  }
+
+  /**
+   * Sets the position of the file pointer at the start of the line defined by offset from $whence.
+   * 
+   * Will not move the pointer past the start/end of the file.
+   *
+   * @param int $offset
+   *   An offset in lines to move the pointer from the specified $whence value.
+   *   Can be positve or negative.
+   * @param int $whence
+   *   The context in which to evaluate the given $offset. The excepted values are:
+   *    SEEK_SET - Set position equal to offset lines.
+   *    SEEK_CUR - Set position to current location plus lines.
+   *    SEEK_END - Set position to end-of-file plus lines.
+   * 
+   * @return boolean
+   *   TRUE if the seek succeeded, FALSE otherwise.
+   */
+  public function seekLine($offset, $whence = SEEK_SET) {
+    $this->seek(0, $whence);
+    $this->seekLineStart();
+    $forward = $offset >= 0 ? TRUE : FALSE;
+    for ($i = 0; $i < $offset; $i++) {
+      $forward ? $this->seekNextLineStart() : $this->seekPrevLineStart();
+    }
+    return $success;
   }
 
 }
@@ -600,11 +627,14 @@ class DelimitedFile extends TextFile {
    *   The current field if successful FALSE otherwise.
    */
   public function getField() {
+    if ($this->EOF()) { // No fields remain.
+      return FALSE;
+    }
     $ret = '';
-    while (!$this->isDelimiter()) {
+    while (!$this->isDelimiter()) { // Get non delimited characters
       $ret .= $this->getc();
     }
-    $this->seekAfterDelimiter();
+    $this->seekAfterDelimiter(); // Move to start of next field
     return $ret;
   }
 
@@ -618,11 +648,11 @@ class DelimitedFile extends TextFile {
    */
   public function getFields($count) {
     $fields = array();
-    while (!$this->EOF() && $count != 0) {
+    while ($count != 0) {
       $fields[] = $this->getField();
       $count--;
     }
-    return $fields;
+    return empty($fields) ? FALSE : $fields;
   }
 
 }

@@ -96,7 +96,7 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
   public function test_getfield() {
     $delimiters = array('|', ',', "\r\n");
     $this->writeToFile("field one|field\ntwo\r\nfield three,field four");
-    $values = array('field one', "field\ntwo", 'field three', 'field four');
+    $values = array('field one', "field\ntwo", 'field three', 'field four', FALSE);
     $file = new DelimitedFile(fopen($this->filename, 'rb'), TextFile::UNIX, $delimiters);
     $successful = TRUE;
     foreach ($values as $value) {
@@ -120,7 +120,7 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
   public function test_getfields() {
     $delimiters = array('|', ',', "\r\n");
     $this->writeToFile("field one|field\ntwo\r\nfield three,field four");
-    $values = array('field one', "field\ntwo", 'field three', 'field four');
+    $values = array('field one', "field\ntwo", 'field three', 'field four', FALSE);
     $file = new DelimitedFile(fopen($this->filename, 'rb'), TextFile::UNIX, $delimiters);
     $successful = TRUE;
     $fields = $file->getFields(0);
