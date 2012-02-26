@@ -65,6 +65,35 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
     unset($file); // Destroy the reference to the file.
   }
 
+  /**
+   * DelimitedFile::seekAfterDelimiter().
+   */
+  public function test_seekAfterDelimiter() {
+    $delimiters = array('|', "\r\n");
+    $content = "a|b\nc\r\nd";
+    $this->writeToFile($content);
+    $values = array(0, 2, 2, 3, 4, 7, 7, 7, 7); // Includes EOF delimiter
+    $file = new DelimitedFile($this->filename, 'r', FALSE, NULL, $delimiters);
+    $successful = TRUE;
+    for ($i = 0; $i < strlen($content); $i++) {
+      $file->seek($i);
+      if ($file->seekAfterDelimiter() !== $values[$i]) {
+        $successful = FALSE;
+        error_log($content[$i]);
+        $this->assert($successful, t('DelimitedFile::seekAfterDelimiter() incorrectly moved to "%actual" expected "%expected"', array(
+              '%actual' => $file->pos,
+              '%expected' => $values[$i]))
+        );
+        break;
+      }
+    }
+    $this->assert($successful, "DelimitedFile::isDelimiter() Correctly seeked after all delimiters.");
+    unset($file); // Destroy the reference to the file.
+  }
+
+  /**
+   * DelimitedFile::getField().
+   */
   public function test_getfield() {
     $delimiters = array('|', ',', "\r\n");
     $this->writeToFile("field one|field\ntwo\r\nfield three,field four");

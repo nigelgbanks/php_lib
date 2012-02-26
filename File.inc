@@ -469,11 +469,11 @@ class DelimitedFile extends File {
         $this->push();
         $this->seek(-$offset, SEEK_CUR); // Move to the expected start of the delimiter.
         $read = $this->read($length);
+        $this->pop();
         if (strcmp($read, $delimiter) == 0) {
           $this->seek($length - $offset, SEEK_CUR);
           break;
         }
-        $this->pop();
       }
     }
     return $this->pos;
