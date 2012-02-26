@@ -39,7 +39,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
   }
 
   private function writeToFile($content) {
-    $handle = fopen($this->filename, 'w');
+    $handle = fopen($this->filename, 'wb');
     fwrite($handle, $content);
     fclose($handle);
   }
@@ -49,8 +49,8 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
    */
   public function test_EOL() {
     $this->writeToFile("a|b\nc\r\nd");
-    $file = new TextFile($this->filename, 'r', FALSE, NULL);
     // Test UNIX
+    $file = new TextFile($this->filename, 'rb', FALSE, NULL, TextFile::UNIX);
     $values = array(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE); // Includes EOF delimiter
     $successful = TRUE;
     foreach ($values as $value) {
@@ -62,9 +62,8 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
       $file->seek(1, SEEK_CUR);
     }
     $this->assert($successful, "TextFile::EOL() Correctly identified all Unix EOL.");
-    $file->rewind();
     // Test DOS
-    $file->format = TextFile::DOS;
+    $file = new TextFile($this->filename, 'rb', FALSE, NULL, TextFile::DOS);
     $values = array(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE); // Includes EOF delimiter
     $successful = TRUE;
     foreach ($values as $value) {
@@ -76,9 +75,8 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
       $file->seek(1, SEEK_CUR);
     }
     $this->assert($successful, "TextFile::EOL() Correctly identified all DOS EOL.");
-    $file->rewind();
     // Test MAC
-    $file->format = TextFile::MAC;
+    $file = new TextFile($this->filename, 'rb', FALSE, NULL, TextFile::MAC);
     $values = array(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE); // Includes EOF delimiter
     $successful = TRUE;
     foreach ($values as $value) {
@@ -90,20 +88,6 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
       $file->seek(1, SEEK_CUR);
     }
     $this->assert($successful, "TextFile::EOL() Correctly identified all MAC EOL.");
-    $file->rewind();
-    // Test UNIX | DOS
-    $file->format = TextFile::UNIX | TextFile::DOS;
-    $values = array(FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, FALSE); // Includes EOF delimiter
-    $successful = TRUE;
-    foreach ($values as $value) {
-      if ($file->EOL() !== $value) {
-        $successful = FALSE;
-        $this->assert($successful, t('TextFile::EOL() incorrectly identified "%char"', array('%char' => addcslashes($file->peekc(), "\r\n"))));
-        break;
-      }
-      $file->seek(1, SEEK_CUR);
-    }
-    $this->assert($successful, "TextFile::EOL() Correctly identified all UNIX|DOC EOL.");
     unset($file); // Destroy the reference to the file.
   }
 
@@ -111,7 +95,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(0, 1, 2, 2, 4, 5, 5, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'r', FALSE, NULL);
+    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);
@@ -127,12 +111,12 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $this->assert($successful, "TextFile::seekBeforeEOL() Correctly seeked before all EOL.");
     unset($file); // Destroy the reference to the file.
   }
-  
+
   public function test_seekAfterEOL() {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(0, 1, 2, 4, 4, 5, 7, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'r', FALSE, NULL);
+    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);
@@ -148,12 +132,12 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $this->assert($successful, "TextFile::seekAfterEOL() Correctly seeked after all EOL.");
     unset($file); // Destroy the reference to the file.
   }
-  
+
   public function test_seekLineStart() {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(0, 0, 0, 0, 4, 4, 4, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'r', FALSE, NULL);
+    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);
@@ -169,12 +153,12 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $this->assert($successful, "TextFile::seekLineStart() Correctly seeked after all EOL.");
     unset($file); // Destroy the reference to the file.
   }
-  
+
   public function test_seekLineEnd() {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(3, 3, 3, 3, 6, 6, 6, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'r', FALSE, NULL);
+    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);

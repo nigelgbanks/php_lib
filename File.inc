@@ -206,20 +206,21 @@ class File {
   }
 
   /**
-   * Peeks up to $length bytes from the file pointer. 
+   * Peeks $length bytes from $offset from the file pointer position.
    * 
-   * Reading stops as soon as one of the following conditions is met:
-   *   $length bytes have been read
-   *   EOF (end of file) is reached
-   * 
+   * @param int $offset
+   *   The offset to move the file pointer before reading.
    * @param int $length
    *   The max number of bytes to peek.
+   * @param boolean $eof
+   *   Allow this function to seek passed the EOF.
    * 
    * @return string
    *   The peeked bytes. 
    */
-  function peek($length) {
+  function peek($offset, $length, $eof = TRUE) {
     $this->push();
+    $this->seek($offset, SEEK_CUR, $eof);
     $ret = $this->read($length);
     $this->pop();
     return $ret;
@@ -264,16 +265,14 @@ class TextFile extends File {
    */
   const UNIX = 1;
   const DOS = 2;
-  const MAC = 4;
+  const MAC = 3;
 
   /**
    * The expected line ending format. 
-   * 
-   * Be careful with mixing multiple formats in the same document.
    *
    * @var int
    */
-  public $format;
+  protected $format;
 
   /**
    * Creates a TextFile instance.
@@ -283,9 +282,12 @@ class TextFile extends File {
    * For the latest documentation
    * @see http://php.net/manual/en/function.fopen.php
    */
-  public function __construct($filename, $mode, $use_include_path = false, $context = NULL) {
+  public function __construct($filename, $mode, $use_include_path = false, $context = NULL, $format = self::UNIX) {
     parent::__construct($filename, $mode, $use_include_path, $context);
-    $this->format = self::UNIX; // Defaults to Unix line endings.
+    if ($format != self::UNIX && $format != self::DOS && $format != self::MAC) {
+      throw new InvalidArgumentException(t('Invalid format given for TextFile'));
+    }
+    $this->format = $format;
   }
 
   /**
@@ -302,28 +304,14 @@ class TextFile extends File {
    * @return boolean
    *   TRUE if the file pointer is on a EOL character FALSE otherwise.
    */
-  public function EOL(&$format = NULL) {
-    $c = $this->peekc();
-    if (strcmp($c, "\r") == 0) { // Starts with a Carriage Return
-      if ($this->format & self::MAC) {
-        return TRUE;
-      }
-      else if ($this->format & self::DOS) {
-        return strcmp($this->peek(2), "\r\n") == 0;
-      }
-    }
-    else if (strcmp($c, "\n") == 0) {
-      if ($this->format & self::UNIX) {
-        return TRUE;
-      }
-      else if ($this->format & self::DOS) {
-        $this->push();
-        if ($this->seek(-1, SEEK_CUR)) {
-          $ret = strcmp($this->read(2), "\r\n") == 0;
-        }
-        $this->pop();
-        return $ret;
-      }
+  public function EOL() {
+    switch ($this->format) {
+      case self::UNIX:
+        return strcmp($this->peekc(), "\n") == 0;
+      case self::DOS:
+        return (strcmp($this->peek(0, 2), "\r\n") == 0 || strcmp($this->peek(-1, 2), "\r\n") == 0);
+      case self::MAC:
+        return strcmp($this->peekc(), "\r") == 0;
     }
     return FALSE;
   }
@@ -337,9 +325,12 @@ class TextFile extends File {
    *   The current position.
    */
   public function seekLastEOL() {
-    if (($this->format & self::DOS) && $this->EOL()) {
-      $c = $this->peekc();
+    if ($this->format == self::DOS && $this->EOL()) {
+      if (strcmp($this->peekc(), "\r") == 0) {
+        $this->seek(1, SEEK_CUR);
+      }
     }
+    return $this->pos;
   }
 
   /**
@@ -436,9 +427,8 @@ class TextFile extends File {
        * Note that this could be speed up by reading large chunks of the file and then
        * processing them but this is easier/safer for the moment.
        */
-      if ($this->EOL()) { // have we hit the EOL
-        $this->seekEOL();
-        $this->seek(-1, SEEK_CUR); // Last EOL Character
+      if ($this->EOL()) {
+        $this->seekLastEOL();
         break;
       }
     } while ($this->seek(1, SEEK_CUR, FALSE)); // Keep looking for the end of this line stop at EOF.
@@ -526,7 +516,7 @@ class DelimitedFile extends TextFile {
    * @param array $delimiters
    *   The delimiters that seperate fields.
    */
-  public function __construct($filename, $mode, $use_include_path = false, $context = NULL, $delimiters = array(',', "\n")) {
+  public function __construct($filename, $mode, $use_include_path = false, $context = NULL, $format = self::UNIX, $delimiters = array(',', "\n")) {
     parent::__construct($filename, $mode, $use_include_path, $context);
     $this->delimiters = $delimiters;
   }
@@ -888,7 +878,7 @@ function file_get_csv($handle, $length = 0, $delimiter = ',', $expected_fields =
         break;
       }
       $next_line_fields = explode($delimiter, $string);
-      // Merge the last field with the start of this one.
+// Merge the last field with the start of this one.
       $fields[count($fields) - 1] .= array_shift($next_line_fields);
       $fields = array_merge($fields, $next_line_fields);
     }

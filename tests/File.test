@@ -11,7 +11,7 @@
  */
 class PHPLib_File_TestCase extends DrupalUnitTestCase {
 
-  protected $data_path;
+  protected $filename;
 
   /**
    * Get Test info.
@@ -22,110 +22,38 @@ class PHPLib_File_TestCase extends DrupalUnitTestCase {
   public static function getInfo() {
     return array(
       'name' => 'File Unit Tests.',
-      'description' => 'Unit tests for File.inc.',
+      'description' => 'Unit tests for the File class.',
       'group' => 'PHP Lib',
     );
   }
 
-  /**
-   * setUp() performs any pre-requisite tasks that need to happen.
-   */
   public function setUp() {
     parent::setUp('php_lib');
     module_load_include('inc', 'php_lib', 'File');
-    $this->data_path = drupal_get_path('module', 'php_lib') . '/tests/data/file';
+    $this->filename = file_create_filename("temp", file_directory_temp());
   }
 
-  /**
-   * Test fpeeks.
-   */
-  public function test_fpeeks() {
-    $handle = fopen("{$this->data_path}/fpeek.txt", 'r');
-    $line_check = "1st line\n";
-    $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), 0, 'fpeeks didnt move the file pointer from start.');
-    $this->assertEqual($line, $line_check, 'fpeeks returned the correct value for the first line.');
-    $line_one_len = strlen($line_check);
-    $line = fpeeks($handle, 1);
-    $this->assertEqual($line, '', 'fpeeks read 0 bytes.');
-    $successful = TRUE;
-    for ($i = 1; $i <= $line_one_len; $i++) {
-      $line = fpeeks($handle, $i + 1);
-      if ($line != substr($line_check, 0, $i)) {
-        $successful = FALSE;
-        break;
-      }
-    }
-    $this->assert($successful, 'fpeeks read the correct value, when the length parameter was provided.');
-    $line_check = "2nd line\n";
-    fgets($handle); // Reads in the first line.
-    $pos = ftell($handle);
-    $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeeks didnt move the file pointer from middle.');
-    $this->assertEqual($line, $line_check, 'fpeeks returned the correct value for the second line.');
-    fseek($handle, -1, SEEK_END);
-    $pos = ftell($handle);
-    $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeeks didnt move the file pointer to the eof.');
-    fseek($handle, 0, SEEK_END);
-    $pos = ftell($handle);
-    $line = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeeks didnt move the file pointer passed the eof.');
+  public function tearDown() {
+    parent::tearDown();
+    unlink($this->filename);
+  }
+  
+  private function writeToFile($content) {
+    $handle = fopen($this->filename, 'wb');
+    fwrite($handle, $content);
     fclose($handle);
   }
 
   /**
-   * Test fpeekc.
+   * Test File::seek().
    */
-  public function test_fpeekc() {
-    $handle = fopen("{$this->data_path}/fpeek.txt", 'r');
-    $char_check = "1";
-    $char = fpeekc($handle);
-    $this->assertEqual(ftell($handle), 0, 'fpeekc didnt move the file pointer from start.');
-    $this->assertEqual($char, $char_check, 'fpeekc returned the correct value for the first character.');
-    $char_check = "s";
-    fgets($handle, 2);
-    $pos = ftell($handle);
-    $char = fpeekc($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeekc didnt move the file pointer from middle.');
-    $this->assertEqual($char, $char_check, 'fpeekc returned the correct value for the second line.');
-    fseek($handle, -1, SEEK_END);
-    $pos = ftell($handle);
-    $char = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeekc didnt move the file pointer to the eof.');
-    fseek($handle, 0, SEEK_END);
-    $pos = ftell($handle);
-    $char = fpeeks($handle);
-    $this->assertEqual(ftell($handle), $pos, 'fpeekc didnt move the file pointer passed the eof.');
-    fclose($handle);
-  }
-
-  /**
-   * Test file_move_before_eol.
-   *
-   * If the file pointer is on a EOL sequence move it to before the sequence if possible.
-   */
-  public function test_file_move_before_eol() {
-    $handle = fopen("{$this->data_path}/file_move_before_eol.txt", 'r');
-
-    fclose($handle);
-  }
-
-  /**
-   * Test file_line_start.
-   */
-  public function test_file_line_start() {
-    //$handle = fopen("{$this->data_path}/file_line_start.txt", 'r');
-    //fclose($handle);
-  }
-
-  /**
-   * Test fungets.
-   */
-  public function test_fungets() {
-    //$handle = fopen("{$this->data_path}/fungets.txt", 'r');
-    //fungets($handle);
-    //fclose($handle);
+  public function test_seek() {
+    $this->writeToFile("a|b\nc\r\nd");
+    $file = new File($this->filename, 'rb');
+    $successful = $file->seek(-1);
+    $this->assert(!$successful, t('File::seek() won\'t seek before the start of the file.'));
+    $successful = $file->seek(1, SEEK_END);
+    $this->assert($successful, t('File::seek() will seek passed the end of the file by default.'));
   }
 
 }
