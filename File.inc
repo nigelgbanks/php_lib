@@ -34,7 +34,15 @@ class File {
    *
    * @var array
    */
-  protected $posStack;
+  protected $history;
+
+  /**
+   * Controlled value repersent
+   * 
+   * 
+   * @var int
+   */
+  protected $ending;
 
   /**
    * Creates a File instance.
@@ -116,6 +124,154 @@ class File {
   }
 
   /**
+   * Checks if the file pointer is on EOF character.
+   *
+   * @return boolean
+   *   TRUE if the file pointer is on a EOF character FALSE otherwise.
+   */
+  public function EOF() {
+    /**
+     * feof() is not always return TRUE when the file pointer is on the EOF character. It requires an attempt
+     * to read the EOF character to be set, and will not be set if you simply seek to the EOF character.
+     */
+    return $this->peekc() === FALSE;
+  }
+
+  /**
+   * Peeks at the current character.
+   *
+   * @return string
+   *   The single character the file pointer is currently pointing at. FALSE when the character is EOF.
+   */
+  public function peekc() {
+    $this->push();
+    $c = fgetc($this->handle);
+    $this->pop();
+    return $c;
+  }
+
+  /**
+   * Peeks at the current line.
+   *
+   * Reading ends when length - 1 bytes have been read, on a newline (which is included in the return value),
+   * or on EOF (whichever comes first). If no length is specified, it will keep reading from the stream until
+   * it reaches the end of the line.
+   *
+   * @param int $length
+   *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
+   *
+   * @return string
+   *   The current line up to the given $length -1 or the last EOL character encounter, or FALSE if EOF.
+   */
+  function peeks($length = 0) {
+    $this->push();
+    $s = $length > 0 ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
+    $this->pop();
+    return $s;
+  }
+
+  /**
+   * Calls fgetc().
+   * 
+   * @return string
+   */
+  function getc() {
+    return fgetc($this->getHandle());
+  }
+
+  /**
+   * Calls fgets().
+   * 
+   * @return string
+   */
+  function gets($length = NULL) {
+    return isset($length) ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
+  }
+
+  /**
+   * Reads up to length bytes from the file pointer referenced by handle. 
+   * 
+   * Reading stops as soon as one of the following conditions is met:
+   *  length bytes have been read
+   *  EOF (end of file) is reached
+   *   
+   * @param int $length
+   *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
+   * 
+   * @return string
+   *   The read bytes.
+   */
+  function read($length) {
+    return fread($this->getHandle(), $length);
+  }
+
+  /**
+   * Pushes the current positon onto the stack.
+   *
+   * @return int
+   *   The current positon.
+   */
+  protected function push() {
+    return $this->history[] = $this->pos;
+  }
+
+  /**
+   * Pops the last position of the stack.
+   *
+   * @return int
+   *   The current position.
+   */
+  protected function pop() {
+    if (empty($this->history)) {
+      return FALSE;
+    }
+    return $this->seek(array_pop($this->history));
+  }
+
+}
+
+/**
+ * Extends the File class to recognize line endings.
+ */
+class TextFile extends File {
+  /**
+   * Supported line ending formats.
+   * 
+   * End of line (EOL) sequences
+   *   Unix: "\n"   0x0a
+   *   DOS:  "\r\n" 0x0d0a
+   *   MAC:  "\r"   0x0d
+   */
+  const UNIX = 1;
+  const DOS = 2;
+  const MAC = 4;
+
+  /**
+   * The expected line ending format. 
+   * 
+   * Can be mixed of multiple formats as such that the class will
+   * recogize both UNIX and DOS line endings within the same file.
+   * 
+   * Be careful with mixing multiple formats.
+   *
+   * @var int
+   */
+  public $format;
+
+  /**
+   * Creates a TextFile instance.
+   *
+   * Takes the same parameters as fopen()
+   *
+   * For the latest documentation
+   * @see http://php.net/manual/en/function.fopen.php
+   */
+  public function __construct($filename, $mode, $use_include_path = false, $context = NULL) {
+    parent::__construct($filename, $mode, $use_include_path, $context);
+    $this->format = self::UNIX; // Defaults to Unix line endings.
+  }
+
+  /**
    * Checks if the file pointer is on EOL character.
    *
    * End of line (EOL) sequences
@@ -169,20 +325,6 @@ class File {
       }
     }
     return $this->pos;
-  }
-
-  /**
-   * Checks if the file pointer is on EOF character.
-   *
-   * @return boolean
-   *   TRUE if the file pointer is on a EOF character FALSE otherwise.
-   */
-  public function EOF() {
-    /**
-     * feof() is not always return TRUE when the file pointer is on the EOF character. It requires an attempt
-     * to read the EOF character to be set, and will not be set if you simply seek to the EOF character.
-     */
-    return $this->peekc() === FALSE;
   }
 
   /**
@@ -296,97 +438,6 @@ class File {
     return $this->seekLineEnd();
   }
 
-  /**
-   * Peeks at the current character.
-   *
-   * @return string
-   *   The single character the file pointer is currently pointing at. FALSE when the character is EOF.
-   */
-  public function peekc() {
-    $this->push();
-    $c = fgetc($this->handle);
-    $this->pop();
-    return $c;
-  }
-
-  /**
-   * Peeks at the current line.
-   *
-   * Reading ends when length - 1 bytes have been read, on a newline (which is included in the return value),
-   * or on EOF (whichever comes first). If no length is specified, it will keep reading from the stream until
-   * it reaches the end of the line.
-   *
-   * @param int $length
-   *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
-   *
-   * @return string
-   *   The current line up to the given $length -1 or the last EOL character encounter, or FALSE if EOF.
-   */
-  function peeks($length = 0) {
-    $this->push();
-    $s = $length > 0 ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
-    $this->pop();
-    return $s;
-  }
-
-  /**
-   * Calls fgetc().
-   * 
-   * @return string
-   */
-  function getc() {
-    return fgetc($this->getHandle());
-  }
-
-  /**
-   * Calls fgets().
-   * 
-   * @return string
-   */
-  function gets($length = NULL) {
-    return isset($length) ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
-  }
-
-  /**
-   * Reads up to length bytes from the file pointer referenced by handle. 
-   * 
-   * Reading stops as soon as one of the following conditions is met:
-   *  length bytes have been read
-   *  EOF (end of file) is reached
-   *   
-   * @param int $length
-   *   The max number of bytes to read from the current line, it must be a positive value greater than 0.
-   * 
-   * @return string
-   *   The read bytes.
-   */
-  function read($length) {
-    return fread($this->getHandle(), $length);
-  }
-
-  /**
-   * Pushes the current positon onto the stack.
-   *
-   * @return int
-   *   The current positon.
-   */
-  protected function push() {
-    return $this->posStack[] = $this->pos;
-  }
-
-  /**
-   * Pops the last position of the stack.
-   *
-   * @return int
-   *   The current position.
-   */
-  protected function pop() {
-    if (empty($this->posStack)) {
-      return FALSE;
-    }
-    return $this->seek(array_pop($this->posStack));
-  }
-
 }
 
 /**
@@ -396,7 +447,7 @@ class File {
  * 
  * Unlike lines fields do not include there delimiter.
  */
-class DelimitedFile extends File {
+class DelimitedFile extends TextFile {
 
   /**
    * The delimiters that seperate fields.
