@@ -46,19 +46,21 @@ class File {
 
   /**
    * Creates a File instance.
+   * 
+   * Note that the $handle transfers ownership to this class, 
+   * and should not be closed outside of this class.
    *
-   * Takes the same parameters as fopen()
-   *
-   * For the latest documentation
-   * @see http://php.net/manual/en/function.fopen.php
+   * @param resource $handle
+   *   A valid file handle as returned by fopen().
+   * 
+   * @throws InvalidArgumentException
+   *   If the $handle provided is not vaild.
    */
-  public function __construct($filename, $mode, $use_include_path = false, $context = NULL) {
-    $this->handle = isset($context) ?
-        fopen($filename, $mode, $use_include_path, $context) :
-        fopen($filename, $mode, $use_include_path); // Deals with warning of passing a NULL when resource is expected.
-    if ($this->handle === FALSE) {
-      throw new ErrorException("Failed to open file $filename", 0, E_ERROR);
+  public function __construct($handle) {
+    if ($handle === FALSE) {
+      throw new InvalidArgumentException(__CLASS__ . ' invalid file handle given.');
     }
+    $this->handle = $handle;
   }
 
   /**
@@ -66,16 +68,6 @@ class File {
    */
   public function __destruct() {
     fclose($this->handle);
-  }
-
-  /**
-   * Gets the file pointer resource this class wraps. Be careful when using this function as your leaving the safety
-   * this class provides by wrapping PHP file functions.
-   *
-   * @return resource
-   */
-  public function getHandle() {
-    return $this->handle;
   }
 
   /**
@@ -89,9 +81,9 @@ class File {
    */
   public function __get($name) {
     if ($name == 'pos') {
-      return ftell($this->getHandle());
+      return ftell($this->handle);
     }
-    throw new InvalidArgumentException("$name isn't a property of " . __CLASS__, 0);
+    throw new InvalidArgumentException("$name isn't a property of " . __CLASS__);
   }
 
   /**
@@ -115,10 +107,10 @@ class File {
     $exists = array_search($name, $functions) !== FALSE; // Function exists
     $aliased = array_key_exists($name, $aliases);
     if ($exists || $aliased) {
-      array_unshift($arguments, $this->getHandle()); // Handle is always the first parameter.
+      array_unshift($arguments, $this->handle); // Handle is always the first parameter.
       return call_user_func_array($aliased ? $aliases[$name] : $name, $arguments);
     }
-    throw new InvalidArgumentException("$name isn't a method of " . __CLASS__, 0);
+    throw new InvalidArgumentException("$name isn't a method of " . __CLASS__);
   }
 
   /**
@@ -139,9 +131,9 @@ class File {
    *   TRUE if the seek succeeded, FALSE otherwise.
    */
   public function seek($offset = NULL, $whence = SEEK_SET, $eof = TRUE) {
-    $ret = fseek($this->getHandle(), $offset, $whence) == 0;
+    $ret = fseek($this->handle, $offset, $whence) == 0;
     if (!$eof && $this->EOF()) { // Not passed EOF
-      if (fseek($this->getHandle(), 0, SEEK_END)) {
+      if (fseek($this->handle, 0, SEEK_END)) {
         return FALSE;
       }
     }
@@ -200,7 +192,7 @@ class File {
    */
   function peeks($length = 0) {
     $this->push();
-    $s = $length > 0 ? fgets($this->getHandle(), $length) : fgets($this->getHandle());
+    $s = $length > 0 ? fgets($this->handle, $length) : fgets($this->handle);
     $this->pop();
     return $s;
   }
@@ -277,15 +269,18 @@ class TextFile extends File {
   /**
    * Creates a TextFile instance.
    *
-   * Takes the same parameters as fopen()
-   *
-   * For the latest documentation
-   * @see http://php.net/manual/en/function.fopen.php
+   * @param resource $handle
+   *   A valid file handle as returned by fopen().
+   * @param int $format
+   *   A valid line ending format for this file.
+   * 
+   * @throws InvalidArgumentException
+   *   If the $handle or $format provided is not vaild.
    */
-  public function __construct($filename, $mode, $use_include_path = false, $context = NULL, $format = self::UNIX) {
-    parent::__construct($filename, $mode, $use_include_path, $context);
+  public function __construct($handle, $format = self::UNIX) {
+    parent::__construct($handle);
     if ($format != self::UNIX && $format != self::DOS && $format != self::MAC) {
-      throw new InvalidArgumentException(t('Invalid format given for TextFile'));
+      throw new InvalidArgumentException(t('Invalid format given for ' . __CLASS__));
     }
     $this->format = $format;
   }
@@ -506,18 +501,20 @@ class DelimitedFile extends TextFile {
   protected $delimiters;
 
   /**
-   * Creates an instance of DelimitedFile.
-   * 
-   * Initially takes the same parameters as fopen()
+   * Creates a DelimitedFile instance.
    *
-   * For the latest documentation
-   * @see http://php.net/manual/en/function.fopen.php
+   * @param resource $handle
+   *   A valid file handle as returned by fopen().
+   * @param int $format
+   *   A valid line ending format for this file.
+   * @param arrat $delimiters 
+   *   A collection of delimiters that can be any number of characters.
    * 
-   * @param array $delimiters
-   *   The delimiters that seperate fields.
+   * @throws InvalidArgumentException
+   *   If the $handle or $format provided is not vaild.
    */
-  public function __construct($filename, $mode, $use_include_path = false, $context = NULL, $format = self::UNIX, $delimiters = array(',', "\n")) {
-    parent::__construct($filename, $mode, $use_include_path, $context);
+  public function __construct($handle, $format = self::UNIX, array $delimiters = array(',', "\n")) {
+    parent::__construct($handle, $format);
     $this->delimiters = $delimiters;
   }
 

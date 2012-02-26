@@ -50,7 +50,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
   public function test_EOL() {
     $this->writeToFile("a|b\nc\r\nd");
     // Test UNIX
-    $file = new TextFile($this->filename, 'rb', FALSE, NULL, TextFile::UNIX);
+    $file = new TextFile(fopen($this->filename, 'rb'), TextFile::UNIX);
     $values = array(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE); // Includes EOF delimiter
     $successful = TRUE;
     foreach ($values as $value) {
@@ -63,7 +63,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     }
     $this->assert($successful, "TextFile::EOL() Correctly identified all Unix EOL.");
     // Test DOS
-    $file = new TextFile($this->filename, 'rb', FALSE, NULL, TextFile::DOS);
+    $file = new TextFile(fopen($this->filename, 'rb'), TextFile::DOS);
     $values = array(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE); // Includes EOF delimiter
     $successful = TRUE;
     foreach ($values as $value) {
@@ -76,7 +76,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     }
     $this->assert($successful, "TextFile::EOL() Correctly identified all DOS EOL.");
     // Test MAC
-    $file = new TextFile($this->filename, 'rb', FALSE, NULL, TextFile::MAC);
+    $file = new TextFile(fopen($this->filename, 'rb'), TextFile::MAC);
     $values = array(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE); // Includes EOF delimiter
     $successful = TRUE;
     foreach ($values as $value) {
@@ -95,7 +95,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(0, 1, 2, 2, 4, 5, 5, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
+    $file = new TextFile(fopen($this->filename, 'rb'));
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);
@@ -116,7 +116,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(0, 1, 2, 4, 4, 5, 7, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
+    $file = new TextFile(fopen($this->filename, 'rb'));
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);
@@ -137,7 +137,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(0, 0, 0, 0, 4, 4, 4, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
+    $file = new TextFile(fopen($this->filename, 'rb'));
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);
@@ -158,7 +158,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
     $content = "a|b\nc\r\nd";
     $this->writeToFile($content);
     $values = array(3, 3, 3, 3, 6, 6, 6, 7, 7); // Includes EOF delimiter
-    $file = new TextFile($this->filename, 'rb', FALSE, NULL);
+    $file = new TextFile(fopen($this->filename, 'rb'));
     $successful = TRUE;
     for ($i = 0; $i < strlen($content); $i++) {
       $file->seek($i);
