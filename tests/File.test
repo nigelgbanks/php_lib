@@ -1,10 +1,8 @@
 <?php
 
-// $Id$
-
 /**
  * @file
- * 
+ *
  * Unit Tests.
  */
 
@@ -17,7 +15,7 @@ class PHPLib_File_TestCase extends DrupalUnitTestCase {
 
   /**
    * Get Test info.
-   * 
+   *
    * @return array
    *   Properties that are displayed in the test selection form.
    */
@@ -30,7 +28,7 @@ class PHPLib_File_TestCase extends DrupalUnitTestCase {
   }
 
   /**
-   * setUp() performs any pre-requisite tasks that need to happen. 
+   * setUp() performs any pre-requisite tasks that need to happen.
    */
   public function setUp() {
     parent::setUp('php_lib');
@@ -104,12 +102,12 @@ class PHPLib_File_TestCase extends DrupalUnitTestCase {
 
   /**
    * Test file_move_before_eol.
-   * 
+   *
    * If the file pointer is on a EOL sequence move it to before the sequence if possible.
    */
   public function test_file_move_before_eol() {
     $handle = fopen("{$this->data_path}/file_move_before_eol.txt", 'r');
-    
+
     fclose($handle);
   }
 

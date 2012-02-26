@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ *
+ * Unit Tests.
+ */
+
+/**
+ * Unit Tests for the FormControl class.
+ */
+class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
+
+  protected $data_path;
+
+  /**
+   * Get Test info.
+   *
+   * @return array
+   *   Properties that are displayed in the test selection form.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'File Unit Tests.',
+      'description' => 'Unit tests for class DelimitedFile.',
+      'group' => 'PHP Lib',
+    );
+  }
+
+  /**
+   * setUp() performs any pre-requisite tasks that need to happen.
+   */
+  public function setUp() {
+    parent::setUp('php_lib');
+    module_load_include('inc', 'php_lib', 'File');
+  }
+
+  /**
+   * 
+   */
+  public function test_isDelimiter() {
+    /**
+     * Write test data.
+     */
+    $filename = file_create_filename("temp", file_directory_temp());
+    $handle = fopen($filename, 'w');
+    $delimiters = array('|', "\r\n");
+    $string = "a|b\nc\r\nd";
+    $values = array(FALSE, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE);
+    fwrite($handle, $string);
+    fclose($handle);
+    /**
+     * Test the class
+     */
+    $file = new DelimitedFile($filename, 'r', FALSE, NULL, array('|', "\r\n"));
+    $successful = TRUE;
+    foreach ($values as $value) {
+      if ($file->isDelimiter() !== $value) {
+        $this->assert(FALSE, t('DelimitedFile::isDelimiter() incorrectly identified "%char"', array('%char' => $char)));
+        $successful = FALSE;
+        break;
+      }
+      $file->seek(1, SEEK_CUR);
+    }
+    $this->assert($successful, "DelimitedFile::isDelimiter() Correctly identified all delimiters.");
+    unset($file); // Destroy the reference to teh file.
+    unlink($filename);
+  }
+
+  public function test_getfile() {
+    
+  }
+
+}
