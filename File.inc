@@ -530,6 +530,13 @@ class DelimitedFile extends TextFile {
   protected $delimiters;
 
   /**
+   * A PREG pattern for matching delimiters.
+   * 
+   * @var string
+   */
+  protected $pattern;
+
+  /**
    * Creates a DelimitedFile instance.
    *
    * @param resource $handle
@@ -545,6 +552,11 @@ class DelimitedFile extends TextFile {
   public function __construct($handle, $format = self::UNIX, array $delimiters = array(',', "\n")) {
     parent::__construct($handle, $format);
     $this->delimiters = $delimiters;
+    $subpatterns = array();
+    foreach ($this->delimiters as $delmiter) {
+      $subpatterns[] = '(' . preg_quote($delmiter) . ')';
+    }
+    $this->pattern = '/' . implode('|', $subpatterns) . '/';
   }
 
   /**
@@ -667,86 +679,83 @@ class DelimitedFile extends TextFile {
    * @return type 
    */
   public function getFields($count) {
-
-    /**
-     * Create search pattern, @todo move to constructor.
-     */
-    $subpatterns = array();
-    foreach ($this->delimiters as $delmiter) {
-      $subpatterns[] = '(' . preg_quote($delmiter) . ')';
-    }
-    $pattern = '/' . implode('|', $subpatterns) . '/';
-    error_log('Pattern: ' . $pattern);
-    /**
-     * Search for fields.
-     */
-    $read = '';
     $fields = array();
-    error_log(':Find:');
+    if (($string = $this->findFields($count)) != FALSE) {
+      $string = $this->normalizeDelimiters($string, $this->delimiters[0]);
+      $fields = explode($this->delimiters[0], $string);
+    }
+    return empty($fields) ? FALSE : $fields;
+  }
+
+  /**
+   * Normalizes the delimiters found in the given $string.
+   * 
+   * @todo This could be moved to a string class, possibly would need to account for the EOF.
+   * 
+   * @param string $string 
+   *   The string to normalize
+   * 
+   * @return string
+   *   The normalized $string.
+   */
+  private function normalizeDelimiters($string, $normal) {
+    $count = count($this->delimiters);
+    for ($i = 0; $i < $count; $i++) {
+      $string = str_replace($this->delimiters[$i], $normal, $string);
+    }
+    return $string;
+  }
+
+  /**
+   * Search file for string containing exactly $count fields.
+   *
+
+   * @param int $count
+   * 
+   * @return string
+   */
+  private function findFields($count) {
     $this->push();
-    $read_until = NULL;
+    $read = '';
     while (!$this->EOF()) {
       $matches = array();
-      $read .= $this->read(1024);
-      error_log('Read: ' . $read);
-      $matched = preg_match_all($pattern, $read, $matches, PREG_OFFSET_CAPTURE);
-      if ($matched >= $count) { // There are enough delimiters matched to seperate the requested number of fields. 
-        $last = $count - 1; // The index for the last delimiter for the request fields.
-        $last_delimiter = $matches[0][$last]; // Last delimiter for the requested fields.
-        error_log(print_r($last_delimiter, TRUE));
-        $read_until = strlen($last_delimiter[0]) + $last_delimiter[1];
-        break;
-      }
-      else if ($this->EOF() && $matched == ($count - 1)) { // A special case were the EOF is expected to be a delimiter.
-        $read_until = $this->pos;
-        break;
+      $read .= $this->read(256);
+      if (($substr = $this->getSubStrWithFields($read, $count)) != FALSE) {
+        $this->pop();
+        $this->seek(strlen($substr), SEEK_CUR);
+        return $substr;
       }
     }
     $this->pop();
-    error_log(':Move:');
-    error_log('Read Until: ' . $read_until);
-    // Move file pointer to position.
-    if (isset($read_until)) {
-      $this->seek($read_until, SEEK_CUR);
-      $read = substr($read, 0, $read_until);
-    }
-    error_log('Read: ' . $read);
-    error_log('Pos: ' . $this->pos);
-    /**
-     * Get fields
-     */
-    error_log(':Process:');
-    if (isset($read_until)) {
-      // Normalize the delimiters
-      $normal = $this->delimiters[0];
-      $count = count($this->delimiters) - 1;
-      for ($i = 1; $i < $count; $i++) {
-        $read = str_replace($this->delimiters[$i], $normal, $read);
-      }
-      $fields = explode($normal, $read);
-    }
-    return empty($fields) ? FALSE : $fields;
-    // Search for the s
-    // going fast?
-    /**
-     * Read the entire line?
-     *
-      // Normalize the delimiters
-      $normal = $this->delimiters[0];
-      $count = count($this->delimiters) - 1;
-      for ($i = 1; $i < $count; $i++) {
-      $read = str_replace($this->delimiters[$i], $normal, $read);
-      }
-      $fields = explode($normal, $read);
+    return FALSE;
+  }
 
-      $fields = array();
-      while ($count != 0 && ($field = $this->getField()) !== FALSE) {
-      $fields[] = $field;
-      $count--;
-      }
-      $this->pop();
-      $this->seek($length, SEEK_CUR); */
-//return empty($fields) ? FALSE : $fields;
+  /**
+   * Attempts to find a substring containing $count fields.
+   * 
+   * @todo This could be moved to a string class, possibly would need to account for the EOF.
+   * 
+   * @param string $read
+   *   The string to search for fields.
+   * @param int $count
+   *   The number of fields to find.
+   * 
+   * @return int
+   *   The substring containing $count fields if successful, FALSE otherwise.
+   */
+  private function getSubStrWithFields($read, $count) {
+    $matches = array();
+    $matched = preg_match_all($this->pattern, $read, $matches, PREG_OFFSET_CAPTURE);
+    if ($matched >= $count) { // There are enough delimiters matched to separate the requested number of fields. 
+      $last = $count - 1; // The index for the last delimiter for the requested fields.
+      $last_delimiter = $matches[0][$last]; // Last delimiter for the requested fields.
+      $length = strlen($last_delimiter[0]) + $last_delimiter[1];
+      return substr($read, 0, $length);
+    }
+    else if ($this->EOF() && $matched == ($count - 1)) { // A special case were the EOF is expected to be a delimiter.
+      return $read;
+    }
+    return FALSE;
   }
 
 }
