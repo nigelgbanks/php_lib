@@ -679,12 +679,52 @@ class DelimitedFile extends TextFile {
    * @return type 
    */
   public function getFields($count) {
+    $this->push();
+    $read = '';
+    $pos = NULL;
+    $fields = array();
+    while (!$this->EOF()) {
+      $matches = array();
+      $read .= $this->read(256);
+      $expected = $count + 1;
+      $matches = preg_split($this->pattern, $read, $expected, PREG_SPLIT_OFFSET_CAPTURE);
+      $matched = count($matches);
+      if ($matched == $expected) {
+        $pos = $matches[$expected - 1][1];
+        array_walk($matches, array($this, 'mapMatches'));
+        array_pop($matches); // Start of next set.
+        $fields = $matches;
+        break;
+      }
+      else if ($this->EOF() && $matched == $count) {
+        $pos = $this->pos;
+        break;
+      }
+    }
+    $this->pop();
+    if (isset($pos)) {
+      $this->seek($pos, SEEK_CUR); // Move to the proper spot.
+    }
+    return empty($fields) ? FALSE : $fields;
+  }
+  
+  public function getFieldsSlow($count) {
     $fields = array();
     if (($string = $this->findFields($count)) != FALSE) {
       $string = $this->normalizeDelimiters($string, $this->delimiters[0]);
       $fields = explode($this->delimiters[0], $string);
     }
     return empty($fields) ? FALSE : $fields;
+  }
+
+  /**
+   * Map Matches from getFields()
+   * 
+   * @param array $item
+   * @param type $key 
+   */
+  private function mapMatches(array &$item, $key) {
+    $item = $item[0];
   }
 
   /**
