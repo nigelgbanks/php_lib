@@ -14,6 +14,8 @@
  *  Windows end of line sequence:  \r\n
  *  Unix end of line sequence: \n
  *  Mac end of line sequence: \r
+ * 
+ * The class implementations are correct but very very slow
  */
 
 /**
@@ -551,7 +553,7 @@ class DelimitedFile extends TextFile {
    * @return boolean 
    *   TRUE if the file pointer is on a delimiter FALSE otherwise.
    */
-  public function isDelimiter() {
+  public function isDelimiterSafe() {
     $ret = FALSE;
     $this->push();
     if ($this->EOF()) {
@@ -646,13 +648,105 @@ class DelimitedFile extends TextFile {
    * @return array
    *   The requested fields up to a max of $count.
    */
-  public function getFields($count) {
+  public function getFieldsSafe($count) {
     $fields = array();
     while ($count != 0 && ($field = $this->getField()) !== FALSE) {
       $fields[] = $field;
       $count--;
     }
     return empty($fields) ? FALSE : $fields;
+  }
+
+  /**
+   * 
+   * 
+   * Unlike other functions in these classes this one has be optimized for speed. And is faster
+   * than fgetcsv() in some cases.
+   * 
+   * @param type $count
+   * @return type 
+   */
+  public function getFields($count) {
+
+    /**
+     * Create search pattern, @todo move to constructor.
+     */
+    $subpatterns = array();
+    foreach ($this->delimiters as $delmiter) {
+      $subpatterns[] = '(' . preg_quote($delmiter) . ')';
+    }
+    $pattern = '/' . implode('|', $subpatterns) . '/';
+    error_log('Pattern: ' . $pattern);
+    /**
+     * Search for fields.
+     */
+    $read = '';
+    $fields = array();
+    error_log(':Find:');
+    $this->push();
+    $read_until = NULL;
+    while (!$this->EOF()) {
+      $matches = array();
+      $read .= $this->read(1024);
+      error_log('Read: ' . $read);
+      $matched = preg_match_all($pattern, $read, $matches, PREG_OFFSET_CAPTURE);
+      if ($matched >= $count) { // There are enough delimiters matched to seperate the requested number of fields. 
+        $last = $count - 1; // The index for the last delimiter for the request fields.
+        $last_delimiter = $matches[0][$last]; // Last delimiter for the requested fields.
+        error_log(print_r($last_delimiter, TRUE));
+        $read_until = strlen($last_delimiter[0]) + $last_delimiter[1];
+        break;
+      }
+      else if ($this->EOF() && $matched == ($count - 1)) { // A special case were the EOF is expected to be a delimiter.
+        $read_until = $this->pos;
+        break;
+      }
+    }
+    $this->pop();
+    error_log(':Move:');
+    error_log('Read Until: ' . $read_until);
+    // Move file pointer to position.
+    if (isset($read_until)) {
+      $this->seek($read_until, SEEK_CUR);
+      $read = substr($read, 0, $read_until);
+    }
+    error_log('Read: ' . $read);
+    error_log('Pos: ' . $this->pos);
+    /**
+     * Get fields
+     */
+    error_log(':Process:');
+    if (isset($read_until)) {
+      // Normalize the delimiters
+      $normal = $this->delimiters[0];
+      $count = count($this->delimiters) - 1;
+      for ($i = 1; $i < $count; $i++) {
+        $read = str_replace($this->delimiters[$i], $normal, $read);
+      }
+      $fields = explode($normal, $read);
+    }
+    return empty($fields) ? FALSE : $fields;
+    // Search for the s
+    // going fast?
+    /**
+     * Read the entire line?
+     *
+      // Normalize the delimiters
+      $normal = $this->delimiters[0];
+      $count = count($this->delimiters) - 1;
+      for ($i = 1; $i < $count; $i++) {
+      $read = str_replace($this->delimiters[$i], $normal, $read);
+      }
+      $fields = explode($normal, $read);
+
+      $fields = array();
+      while ($count != 0 && ($field = $this->getField()) !== FALSE) {
+      $fields[] = $field;
+      $count--;
+      }
+      $this->pop();
+      $this->seek($length, SEEK_CUR); */
+//return empty($fields) ? FALSE : $fields;
   }
 
 }
