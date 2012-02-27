@@ -648,8 +648,8 @@ class DelimitedFile extends TextFile {
    */
   public function getFields($count) {
     $fields = array();
-    while ($count != 0) {
-      $fields[] = $this->getField();
+    while ($count != 0 && ($field = $this->getField()) !== FALSE) {
+      $fields[] = $field;
       $count--;
     }
     return empty($fields) ? FALSE : $fields;
