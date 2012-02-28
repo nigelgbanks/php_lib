@@ -670,30 +670,30 @@ class DelimitedFile extends TextFile {
   }
 
   /**
+   * Unlike other functions in these classes this one has be optimized for speed. 
    * 
+   * fgetcsv() is about twice as fast as this function but this supports multiple delimiters, allows for EOL characters
+   * to not be considered delimters useful when dealing with mixed line endings.
    * 
-   * Unlike other functions in these classes this one has be optimized for speed. And is faster
-   * than fgetcsv() in some cases.
-   * 
-   * @param type $count
-   * @return type 
+   * @param int $count
+   *   The number of fields to get.
+   * @return array
+   *   The fields if found, FALSE otherwise.
    */
   public function getFields($count) {
     $this->push();
     $read = '';
     $pos = NULL;
     $fields = array();
+    $expected = $count + 1;
     while (!$this->EOF()) {
       $matches = array();
-      $read .= $this->read(256);
-      $expected = $count + 1;
+      $read .= $this->read(1024);
       $matches = preg_split($this->pattern, $read, $expected, PREG_SPLIT_OFFSET_CAPTURE);
       $matched = count($matches);
       if ($matched == $expected) {
-        $pos = $matches[$expected - 1][1];
-        array_walk($matches, array($this, 'mapMatches'));
-        array_pop($matches); // Start of next set.
-        $fields = $matches;
+        $pos = $matches[$count][1];
+        array_pop($matches);
         break;
       }
       else if ($this->EOF() && $matched == $count) {
@@ -704,15 +704,8 @@ class DelimitedFile extends TextFile {
     $this->pop();
     if (isset($pos)) {
       $this->seek($pos, SEEK_CUR); // Move to the proper spot.
-    }
-    return empty($fields) ? FALSE : $fields;
-  }
-  
-  public function getFieldsSlow($count) {
-    $fields = array();
-    if (($string = $this->findFields($count)) != FALSE) {
-      $string = $this->normalizeDelimiters($string, $this->delimiters[0]);
-      $fields = explode($this->delimiters[0], $string);
+      array_walk($matches, array($this, 'mapMatches'));
+      $fields = $matches;
     }
     return empty($fields) ? FALSE : $fields;
   }
@@ -725,77 +718,6 @@ class DelimitedFile extends TextFile {
    */
   private function mapMatches(array &$item, $key) {
     $item = $item[0];
-  }
-
-  /**
-   * Normalizes the delimiters found in the given $string.
-   * 
-   * @todo This could be moved to a string class, possibly would need to account for the EOF.
-   * 
-   * @param string $string 
-   *   The string to normalize
-   * 
-   * @return string
-   *   The normalized $string.
-   */
-  private function normalizeDelimiters($string, $normal) {
-    $count = count($this->delimiters);
-    for ($i = 0; $i < $count; $i++) {
-      $string = str_replace($this->delimiters[$i], $normal, $string);
-    }
-    return $string;
-  }
-
-  /**
-   * Search file for string containing exactly $count fields.
-   *
-
-   * @param int $count
-   * 
-   * @return string
-   */
-  private function findFields($count) {
-    $this->push();
-    $read = '';
-    while (!$this->EOF()) {
-      $matches = array();
-      $read .= $this->read(256);
-      if (($substr = $this->getSubStrWithFields($read, $count)) != FALSE) {
-        $this->pop();
-        $this->seek(strlen($substr), SEEK_CUR);
-        return $substr;
-      }
-    }
-    $this->pop();
-    return FALSE;
-  }
-
-  /**
-   * Attempts to find a substring containing $count fields.
-   * 
-   * @todo This could be moved to a string class, possibly would need to account for the EOF.
-   * 
-   * @param string $read
-   *   The string to search for fields.
-   * @param int $count
-   *   The number of fields to find.
-   * 
-   * @return int
-   *   The substring containing $count fields if successful, FALSE otherwise.
-   */
-  private function getSubStrWithFields($read, $count) {
-    $matches = array();
-    $matched = preg_match_all($this->pattern, $read, $matches, PREG_OFFSET_CAPTURE);
-    if ($matched >= $count) { // There are enough delimiters matched to separate the requested number of fields. 
-      $last = $count - 1; // The index for the last delimiter for the requested fields.
-      $last_delimiter = $matches[0][$last]; // Last delimiter for the requested fields.
-      $length = strlen($last_delimiter[0]) + $last_delimiter[1];
-      return substr($read, 0, $length);
-    }
-    else if ($this->EOF() && $matched == ($count - 1)) { // A special case were the EOF is expected to be a delimiter.
-      return $read;
-    }
-    return FALSE;
   }
 
 }
