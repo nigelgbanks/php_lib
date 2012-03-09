@@ -511,6 +511,34 @@ class TextFile extends File {
     return $success;
   }
 
+  /**
+   * Similar to fgets but respects the files encoding.
+   * 
+   * fgets is significatly faster but this is only noticible on large files with 10,000 or more lines.
+   */
+  public function getLine() {
+    if (feof($this->handle)) {
+      return FALSE;
+    }
+    $start = ftell($this->handle);
+    $buffer = '';
+    $offset = 0;
+    while (!feof($this->handle)) {
+      $buffer .= fread($this->handle, 128);
+      if (($pos = strpos($buffer, $this->ending, $offset)) !== FALSE) {
+        fseek($this->handle, $start + $pos + strlen($this->ending), SEEK_SET);
+        return substr($buffer, 0, $pos);
+      }
+      /**
+       * If it didn't match maybe the first character was at the 
+       * end of the line since encoding is at most 2 characters.
+       */
+      $offset += strlen($buffer) - 2;
+    }
+
+    return strlen($buffer) == 0 ? FALSE : $buffer;
+  }
+
 }
 
 /**
@@ -543,15 +571,18 @@ class DelimitedFile extends TextFile {
    *   A valid file handle as returned by fopen().
    * @param int $format
    *   A valid line ending format for this file.
-   * @param arrat $delimiters 
-   *   A collection of delimiters that can be any number of characters.
+   * @param mixed $delimiters 
+   *   A single delimiter or a collection of delimiters that can be any number of characters.
    * 
    * @throws InvalidArgumentException
    *   If the $handle or $format provided is not vaild.
    */
-  public function __construct($handle, $format = self::UNIX, array $delimiters = array(',', "\n")) {
+  public function __construct($handle, $format = self::UNIX, $delimiters = ',') {
     parent::__construct($handle, $format);
-    $this->delimiters = $delimiters;
+    $this->delimiters = is_array($delimiters) ? $delimiters : array($delimiters);
+    if (array_search($this->ending, $this->delimiters) === FALSE) {
+      $this->delimiters[] = $this->ending;
+    }
     $subpatterns = array();
     foreach ($this->delimiters as $delmiter) {
       $subpatterns[] = '(' . preg_quote($delmiter) . ')';
@@ -675,39 +706,16 @@ class DelimitedFile extends TextFile {
    * fgetcsv() is about twice as fast as this function but this supports multiple delimiters, allows for EOL characters
    * to not be considered delimters useful when dealing with mixed line endings.
    * 
+   * The speed difference is only noticible on large files with 10,000 or more lines.
+   * 
    * @param int $count
    *   The number of fields to get.
    * @return array
    *   The fields if found, FALSE otherwise.
    */
-  public function getFields($count) {
-    $this->push();
-    $read = '';
-    $pos = NULL;
-    $fields = array();
-    $expected = $count + 1;
-    while (!$this->EOF()) {
-      $matches = array();
-      $read .= $this->read(1024);
-      $matches = preg_split($this->pattern, $read, $expected, PREG_SPLIT_OFFSET_CAPTURE);
-      $matched = count($matches);
-      if ($matched == $expected) {
-        $pos = $matches[$count][1];
-        array_pop($matches);
-        break;
-      }
-      else if ($this->EOF() && $matched == $count) {
-        $pos = $this->pos;
-        break;
-      }
-    }
-    $this->pop();
-    if (isset($pos)) {
-      $this->seek($pos, SEEK_CUR); // Move to the proper spot.
-      array_walk($matches, array($this, 'mapMatches'));
-      $fields = $matches;
-    }
-    return empty($fields) ? FALSE : $fields;
+  public function getFields() {
+    $line = $this->getLine();
+    return $line === FALSE ? FALSE : preg_split($this->pattern, $line);
   }
 
   /**
