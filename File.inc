@@ -533,7 +533,7 @@ class TextFile extends File {
        * If it didn't match maybe the first character was at the 
        * end of the line since encoding is at most 2 characters.
        */
-      $offset += strlen($buffer) - 2;
+      $offset = strlen($buffer) - 2;
     }
 
     return strlen($buffer) == 0 ? FALSE : $buffer;
