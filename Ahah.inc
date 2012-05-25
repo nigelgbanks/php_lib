@@ -10,9 +10,9 @@ class Ahah {
 
   /**
    * Is this a valid request.
-   * 
+   *
    * Ensure that a form_build_id is specified.
-   * 
+   *
    * @return boolean
    */
   public static function validRequest() {
@@ -29,7 +29,7 @@ class Ahah {
 
   /**
    * Ge the form_id, form_build_id, form, and form_state.
-   * 
+   *
    * @param Post $post
    * @return array
    */
@@ -38,7 +38,11 @@ class Ahah {
       self::cancelResponse();
     }
     $form_build_id = $_REQUEST['form_build_id'];
-    $form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => $_POST);
+    $form_state = array(
+      'storage' => NULL,
+      'submitted' => FALSE,
+      'post' => $_POST,
+    );
     if (!$form = form_get_cache($form_build_id, $form_state)) {
       if ($form_id = $form_state['post']['form_id']) {
         $form = drupal_retrieve_form($form_id, $form_state);
@@ -48,7 +52,7 @@ class Ahah {
       self::cancelResponse();
     }
     module_load_include('inc', 'node', 'node.pages'); // Need for using AHAH in conjunction with Node API.
-    if(!$form_id) {
+    if (!$form_id) {
       $form_id = array_shift($form['#parameters']);
     }
     return array($form_id, $form_build_id, &$form, &$form_state);
@@ -58,11 +62,11 @@ class Ahah {
    *
    * @param type $form_id
    * @param array $form
-   * @param array $form_state 
+   * @param array $form_state
    */
   public static function &processForm($form_id, array &$form, array &$form_state) {
     $form['#post'] = $_POST;
-    $form['#redirect'] = FALSE;
+    $form_state['#redirect'] = FALSE;
     $form['#programmed'] = FALSE;
     $form_state['post'] = $_POST;
     $form_state['values'] = array();
@@ -76,7 +80,7 @@ class Ahah {
    * @param type $form_build_id
    * @param array $form
    * @param array $form_state
-   * @return type 
+   * @return type
    */
   public static function &rebuildForm($form_id, $form_build_id, array &$form, array &$form_state) {
     $args = $form['#parameters'];
@@ -86,19 +90,20 @@ class Ahah {
 
   /**
    * Send a response to the AHAH request.
-   * 
-   * @param array $form 
+   *
+   * @param array $form
    */
   public static function respond(array &$form = NULL) {
+    // TODO Please change this theme call to use an associative array for the $variables parameter.
     $data = theme('status_messages');
     if (isset($form)) {
       unset($form['#prefix'], $form['#suffix']);
       $data .= drupal_render($form);
     }
-    $javascript = drupal_add_js(NULL, NULL, 'header');
+    $javascript = drupal_add_js(NULL, array('type' => NULL));
     $settings = call_user_func_array('array_merge_recursive', $javascript['setting']);
     unset($settings['ahah']['']);
-    drupal_json(array(
+    drupal_json_output(array(
       'status' => TRUE,
       'data' => $data,
       'settings' => $settings,

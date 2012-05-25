@@ -4,29 +4,29 @@
  * @file
  *
  * Abstracts EAC-CPF xml document into a PHP class where the maintence history is maintained automatically by the class.
- * 
+ *
  */
 module_load_include('inc', 'islandora_metadata', 'XMLDocument');
 
 /**
  * EACCPFType:
- * 
- * SINGLE IDENTITY: one person (or corporate body or family) with a single identity represented in one 
+ *
+ * SINGLE IDENTITY: one person (or corporate body or family) with a single identity represented in one
  * EAC-CPF instance. (Most common)
- * 
- * MULTIPLE IDENTITY-MANY IN ONE: two or more identities (including official identities) with each represented by 
- * distinct descriptions within one EAC-CPF instance. Can be programmatically converted into Multiple Identity-One 
+ *
+ * MULTIPLE IDENTITY-MANY IN ONE: two or more identities (including official identities) with each represented by
+ * distinct descriptions within one EAC-CPF instance. Can be programmatically converted into Multiple Identity-One
  * in Many. (Less common though not rare).
- * 
- * MULTIPLE IDENTITY-ONE IN MANY: two or more identities (including official identities) each represented in two or 
- * more interrelated EAC-CPF instances. Can be programmatically converted into Multiple Identity-Many in One. 
+ *
+ * MULTIPLE IDENTITY-ONE IN MANY: two or more identities (including official identities) each represented in two or
+ * more interrelated EAC-CPF instances. Can be programmatically converted into Multiple Identity-Many in One.
  * (Less common though not rare).
- * 
- * ALTERNATIVE SET: derived EAC-CPF instance that is based on and incorporates two or more alternative EAC-CPF 
- * instances for the same entity. To be used by a consortia or a utility providing union access to authority records 
- * maintained in two or more systems by two or more agencies. Alternative EAC-CPF instances may be in different 
+ *
+ * ALTERNATIVE SET: derived EAC-CPF instance that is based on and incorporates two or more alternative EAC-CPF
+ * instances for the same entity. To be used by a consortia or a utility providing union access to authority records
+ * maintained in two or more systems by two or more agencies. Alternative EAC-CPF instances may be in different
  * languages or in the same language.
- * 
+ *
  * COLLABORATIVE IDENTITY: a single identity shared by two or more persons (e.g. a shared pseudonym used in creation
  * of a collaborative work). Use Multiple Identity-One in Many. (Rare).
  */
@@ -35,7 +35,7 @@ enum('EACCPFType', array(
   'MULTIPLE_IDENTITY_MANY_IN_ONE',
   'MULTIPLE_IDENTITY_ONE_IN_MANY',
   'ALTERNATIVE_SET',
-  'COLLABORATIVE_IDENTITY'
+  'COLLABORATIVE_IDENTITY',
 ));
 enum('EACCPFMaintenceStatusType', array(
   'revised' => 'revised',
@@ -44,11 +44,13 @@ enum('EACCPFMaintenceStatusType', array(
   'deletedSplit' => 'deletedSplit',
   'deletedReplaced' => 'deletedReplaced',
   'cancelled' => 'cancelled',
-  'derived' => 'derived')
+  'derived' => 'derived',
+)
 );
 enum('EACCPFAgentType', array(
   'human' => 'human',
-  'machine' => 'machine')
+  'machine' => 'machine',
+)
 );
 enum('EACCPFMaintenceEventType', array(
   'created' => 'created',
@@ -56,7 +58,8 @@ enum('EACCPFMaintenceEventType', array(
   'deleted' => 'deleted',
   'cancelled' => 'cancelled',
   'derived' => 'cancelled',
-  'updated' => 'cancelled')
+  'updated' => 'cancelled',
+)
 );
 
 /**
@@ -89,18 +92,19 @@ class EACCPFDocument extends _XMLDocument {
   public function __construct() {
     $validator = new XMLDocumentValidator(XMLSchemaFormat::XSD(), drupal_get_path('module', 'islandora_metadata') . '/xsd/cpf.xsd');
     $namespaces = new XMLDocumentNamepaces('urn:isbn:1-931666-33-4', array(
-          'xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-          'xlink' => 'http://www.w3.org/1999/xlink')
+      'xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+      'xlink' => 'http://www.w3.org/1999/xlink',
+    )
     );
     parent::__construct($namespaces, $validator);
   }
 
   /**
    * Sets the ID for this record.
-   * 
-   * @param string $id 
+   *
+   * @param string $id
    *   The record ID.
-   * 
+   *
    * @return boolean
    *   TRUE if successful, FALSE otherwise.
    */
@@ -116,10 +120,10 @@ class EACCPFDocument extends _XMLDocument {
 
   /**
    * Set the Maintenance Status of this document.
-   * 
-   * @param EACCPFMaintenceStatusType $status 
+   *
+   * @param EACCPFMaintenceStatusType $status
    *   The maintenance status.
-   * 
+   *
    * @return boolean
    *   TRUE on success FALSE otherwise.
    */
@@ -135,10 +139,10 @@ class EACCPFDocument extends _XMLDocument {
 
   /**
    * Set the Maintenance Status of this document.
-   * 
-   * @param EACCPFMaintenceStatusType $status 
+   *
+   * @param EACCPFMaintenceStatusType $status
    *   The maintenance status.
-   * 
+   *
    * @return boolean
    *   TRUE on success FALSE otherwise.
    */
@@ -154,16 +158,16 @@ class EACCPFDocument extends _XMLDocument {
 
   /**
    * Adds a Maintence Event.
-   * 
+   *
    * @param EACCPFMaintenceEventType $event_type
    *   The event type.
    * @param EACCPFAgentType $agent_type
    *   The agent type.
    * @param string $agent
    *   The current user performing the maintence event.
-   * @param string $description 
+   * @param string $description
    *   A description for the event.
-   * 
+   *
    * @return boolean
    *   TRUE on success FALSE otherwise.
    */
@@ -188,12 +192,12 @@ class EACCPFDocument extends _XMLDocument {
     }
     return FALSE;
   }
-  
+
   /**
-   * 
+   *
    */
   public function cpfDescription() {
-    
+
   }
 
 }

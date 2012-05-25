@@ -14,34 +14,34 @@ class Members {
 
   /**
    * Pointer to the Class that owns these members.
-   * 
+   *
    * @var object
    */
   protected $owner;
   /**
    * The depth in the call stack.
-   * 
+   *
    * @var integer
    */
   protected $depth;
   /**
    * A string of members
-   * 
+   *
    * @var array
    */
   protected $members;
   /**
    * A map of values where the key's are the member names.
-   * 
+   *
    * @var array
    */
   protected $values;
 
   /**
    * Create a Members Object.
-   * 
+   *
    * @param array $members
-   * @param array $params 
+   * @param array $params
    */
   public function __construct(array $members, array $params = NULL) {
     $this->owner = isset($params['owner']) ? $params['owner'] : get_caller_class(1);
@@ -52,9 +52,9 @@ class Members {
 
   /**
    * Checks to see if this class contains the given member.
-   * 
-   * @param string $name 
-   * 
+   *
+   * @param string $name
+   *
    * @return boolean
    */
   public function has($name) {
@@ -62,11 +62,11 @@ class Members {
   }
 
   /**
-   * Checks to see if this class contains the given member and 
+   * Checks to see if this class contains the given member and
    * the value of the member is set.
-   * 
+   *
    * @param string $name
-   * 
+   *
    * @return boolean
    */
   public function exists($name) {
@@ -78,11 +78,11 @@ class Members {
 
   /**
    * Adds a new member and value to this class.
-   * 
+   *
    * If the member is already defined its value will be overwritten with the new value.
-   * 
+   *
    * @param string $name
-   * @param mixed $value 
+   * @param mixed $value
    */
   public function addMember($name, $value = NULL) {
     $this->values[$name] = $value;
@@ -93,7 +93,7 @@ class Members {
 
   /**
    * Adds several members to this class
-   * 
+   *
    * @param array members
    *   A map of values where the key are the member's names.
    */
@@ -105,7 +105,7 @@ class Members {
 
   /**
    * Removes a member, and its value.
-   * 
+   *
    * @param string $name
    */
   public function removeMember($name) {
@@ -115,11 +115,11 @@ class Members {
 
   /**
    * Get a value for the given member if it exists.
-   * 
+   *
    * Return NULL if the member doesn't exist or isn't set.
-   * 
+   *
    * @param string $name
-   * @return mixed 
+   * @return mixed
    */
   public function __get($name) {
     if ($this->exists($name)) {
@@ -130,11 +130,11 @@ class Members {
 
   /**
    * Set the value for the given member if it exists.
-   * 
+   *
    * Note that this doesn't create a new element.
-   * 
+   *
    * @param string $name
-   * @param mixed $value 
+   * @param mixed $value
    */
   public function __set($name, $value) {
     if ($this->has($name)) {
@@ -144,9 +144,9 @@ class Members {
 
   /**
    * Checks to see if a member exists and isn't NULL.
-   * 
+   *
    * @param string $name
-   * @return boolean 
+   * @return boolean
    */
   public function __isset($name) {
     return $this->exists($name);
@@ -154,8 +154,8 @@ class Members {
 
   /**
    * Unset's a member.
-   * 
-   * @param string $name 
+   *
+   * @param string $name
    */
   public function __unset($name) {
     unset($this->values[$name]);

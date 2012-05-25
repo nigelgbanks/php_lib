@@ -9,7 +9,7 @@ module_load_include('inc', 'php_lib', 'Array');
 /**
  *
  * @param array $element
- * @param array $form 
+ * @param array $form
  */
 function &get_form_element_parent(array $element, array &$form) {
   if (!empty($element['#array_parents'])) {
@@ -21,11 +21,11 @@ function &get_form_element_parent(array $element, array &$form) {
 }
 
 /**
- * Takes the value of the given property from the current element and propogates it to its child elements 
+ * Takes the value of the given property from the current element and propogates it to its child elements
  * if they have not already set that property.
- * 
+ *
  * @param array $element
- * @param string $property 
+ * @param string $property
  */
 function propagate_form_element_property(array &$element, $property) {
   $element[$property] = get_form_element_property($element, $property);
@@ -40,7 +40,7 @@ function propagate_form_element_property(array &$element, $property) {
 
 /**
  * Get the value of the given property if set, otherwise the default value for that property will be returned.
- * 
+ *
  * @param array $element
  * @param string $property
  * @return mixed
@@ -56,7 +56,7 @@ function get_form_element_property(array &$element, $property) {
 /**
  *
  * @param array $element
- * @param string $type 
+ * @param string $type
  * @return array
  */
 function get_element_children(array &$element, $type) {

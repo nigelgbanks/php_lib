@@ -7,7 +7,7 @@
 module_load_include('inc', 'php_lib', 'Backtrace');
 
 /**
- * 
+ *
  */
 class ReadOnlyPrivateMembers {
 
@@ -18,7 +18,7 @@ class ReadOnlyPrivateMembers {
   protected $owner;
   /**
    * Call depth.
-   * 
+   *
    * @var int
    */
   protected $depth;
@@ -29,13 +29,13 @@ class ReadOnlyPrivateMembers {
   protected $members;
   /**
    *
-   * @var type 
+   * @var type
    */
   protected $values;
 
   /**
    *
-   * @param array $members 
+   * @param array $members
    * @param array $params
    *   Optional parameters that set what the owning class is.
    */
@@ -56,7 +56,7 @@ class ReadOnlyPrivateMembers {
 
   /**
    *
-   * @param string $name 
+   * @param string $name
    */
   public function has($name) {
     if (array_search($name, $this->members)) {
@@ -78,7 +78,7 @@ class ReadOnlyPrivateMembers {
   }
 
   /**
-   * 
+   *
    */
   public function add($name, $value = NULL) {
     array_push($this->members, $name);
@@ -87,8 +87,8 @@ class ReadOnlyPrivateMembers {
 
   /**
    * Removes a member
-   * 
-   * @param string $name 
+   *
+   * @param string $name
    */
   public function remove($name) {
     unset($this->members[$name]);
@@ -107,7 +107,7 @@ class ReadOnlyPrivateMembers {
   /**
    *
    * @param string $name
-   * @param mixed $value 
+   * @param mixed $value
    */
   public function __set($name, $value) {
     if ($this->has($name)) {

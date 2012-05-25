@@ -13,25 +13,25 @@ class LazyMember {
 
   /**
    * A valid argument for call_user_func.
-   * 
+   *
    * @var mixed
    */
   protected $function;
   /**
-   * 
-   * 
+   *
+   *
    * @var mixed
    */
   protected $parameters;
   /**
    * The result from the function.
-   * 
+   *
    * @var mixed
    */
   protected $value;
   /**
-   * Has the value 
-   * 
+   * Has the value
+   *
    * @var boolean
    */
   public $dirty;
@@ -39,7 +39,7 @@ class LazyMember {
   /**
    *
    * @param mixed $function
-   * @param object $owner 
+   * @param object $owner
    */
   public function __construct($function, $parameters = NULL) {
     $this->function = $function;
@@ -49,7 +49,7 @@ class LazyMember {
   }
 
   /**
-   * 
+   *
    */
   public function __invoke() {
     if ($this->dirty) {
@@ -74,9 +74,9 @@ class LazyMembers extends Members {
 
   /**
    * Create a LazyMembers object.
-   * 
+   *
    * @param array $members
-   * @param array $params 
+   * @param array $params
    */
   public function __construct(array $members, array $params = NULL) {
     parent::__construct($members, $params);
@@ -84,8 +84,8 @@ class LazyMembers extends Members {
 
   /**
    * Checks to see if a member is lazy.
-   * 
-   * @param string $name 
+   *
+   * @param string $name
    * @return boolean
    */
   public function isLazy($name) {
@@ -94,8 +94,8 @@ class LazyMembers extends Members {
 
   /**
    * Set the member is as dirty.
-   * 
-   * @param string $name 
+   *
+   * @param string $name
    */
   public function setDirty($name) {
     if ($this->isLazy($name)) {
@@ -105,11 +105,11 @@ class LazyMembers extends Members {
 
   /**
    * Get a value for the given member if it exists.
-   * 
+   *
    * Return NULL if the member doesn't exist or isn't set.
-   * 
+   *
    * @param string $name
-   * @return mixed 
+   * @return mixed
    */
   public function __get($name) {
     if ($this->isLazy($name)) {
@@ -123,11 +123,11 @@ class LazyMembers extends Members {
 
   /**
    * Set the value for the given member if it exists.
-   * 
+   *
    * Note that this doesn't create a new element.
-   * 
+   *
    * @param string $name
-   * @param mixed $value 
+   * @param mixed $value
    */
   public function __set($name, $value) {
     if ($this->has($name) && !$this->isLazy($name)) {

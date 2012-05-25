@@ -8,7 +8,7 @@ module_load_include('inc', 'php_lib', 'Backtrace');
 module_load_include('inc', 'php_lib', 'Array');
 
 /**
- * 
+ *
  */
 class ReadOnlyProtectedMembers {
 
@@ -19,25 +19,25 @@ class ReadOnlyProtectedMembers {
   protected $owner;
   /**
    * Call depth.
-   * 
+   *
    * @var int
    */
   protected $depth;
   /**
    * The list of protected members.
-   * 
+   *
    * @var array
    */
   protected $members;
   /**
    *
-   * @var type 
+   * @var type
    */
   protected $values;
 
   /**
    *
-   * @param array $members 
+   * @param array $members
    * @param array $params
    *   Optional parameters that set what the owning class is.
    */
@@ -58,7 +58,7 @@ class ReadOnlyProtectedMembers {
 
   /**
    *
-   * @param string $name 
+   * @param string $name
    */
   public function has($name) {
     return array_search($name, $this->members) !== FALSE;
@@ -77,7 +77,7 @@ class ReadOnlyProtectedMembers {
   }
 
   /**
-   * 
+   *
    */
   public function add($name, $value = NULL) {
     if (is_array($name)) {
@@ -93,8 +93,8 @@ class ReadOnlyProtectedMembers {
 
   /**
    * Removes a member
-   * 
-   * @param string $name 
+   *
+   * @param string $name
    */
   public function remove($name) {
     unset($this->members[$name]);
@@ -113,7 +113,7 @@ class ReadOnlyProtectedMembers {
   /**
    *
    * @param string $name
-   * @param mixed $value 
+   * @param mixed $value
    */
   public function __set($name, $value) {
     if ($this->has($name)) {

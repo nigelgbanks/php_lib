@@ -28,7 +28,7 @@ function array_copy_recursive(array &$array) {
  *
  * @param array $array
  * @param type $key
- * @param type $value 
+ * @param type $value
  */
 function array_add(array &$array, $key, $value) {
   if (isset($key)) {
@@ -42,7 +42,7 @@ function array_add(array &$array, $key, $value) {
 /**
  * Given an array of index's this functions attempts a depth first traversal of the given array
  * using the provided indices.
- * 
+ *
  * @param array $form
  * @param array $indices
  * @return mixed
@@ -77,7 +77,7 @@ function array_filter_type(array &$array, $type) {
 
 /**
  *
- * @param array $array 
+ * @param array $array
  */
 function is_non_empty_array($array) {
   return is_array($array) && count($array) > 0;
@@ -86,7 +86,7 @@ function is_non_empty_array($array) {
 /**
  *
  * @param type $object
- * @return type 
+ * @return type
  */
 function object_as_array($object) {
   $array = array();
@@ -101,8 +101,8 @@ function object_as_array($object) {
 
 /**
  * Returns the first element without modifying the array.
- * 
- * @param array $array 
+ *
+ * @param array $array
  */
 function array_peek(array $array) {
   reset($array);

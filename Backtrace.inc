@@ -3,7 +3,7 @@
 /**
  * @file
  *
- * 
+ *
  * Functions for determining call order and such...
  */
 
@@ -12,7 +12,7 @@
  *
  * Convenience function used to account for the current function in the call stack.
  * The caller assumes their function is index 0, so add one to account for this function.
- * 
+ *
  * @param int $index
  *   Index to modify to account for the callee in the call stack.
  */
@@ -23,9 +23,9 @@ function _ignore_this_in_call_stack($index = NULL) {
 
 /**
  * Gets the call stack properties at the specifed index.
- * 
+ *
  * @param int $index
- * 
+ *
  * @return array
  *   Return the call stack properties for the given index if found. Otherwise NULL is returned.
  */
@@ -40,9 +40,9 @@ function get_call_stack_index($index = NULL) {
 
 /**
  * Gets the given property of the caller at the specified index in the call stack.
- * 
+ *
  * @param int $index
- * 
+ *
  * @param string $property
  *   A call stack property. Expected to be one of the following.
  *      function	-> The current function name.
@@ -63,12 +63,12 @@ function get_caller_property($index, $property) {
 }
 
 /**
- * Gets the caller method at the given index. 
- * 
+ * Gets the caller method at the given index.
+ *
  * The caller of this function's index is assumed to be 0.
- * 
+ *
  * @param int $index
- * 
+ *
  * @return string
  */
 function get_caller_function($index = NULL) {
@@ -79,10 +79,10 @@ function get_caller_function($index = NULL) {
 /**
  * Gets the line of the caller method at the given index.
  *
- * The caller of this function's index is assumed to be 0. 
+ * The caller of this function's index is assumed to be 0.
  *
  * @param int $index
- * 
+ *
  * @return int
  */
 function get_caller_line($index = NULL) {
@@ -92,10 +92,10 @@ function get_caller_line($index = NULL) {
 
 /**
  * Gets the name of file where the callee is located.
- * 
+ *
  * @param int $index
  *
- * @return string 
+ * @return string
  */
 function get_caller_file($index = NULL) {
   $index = _ignore_this_in_call_stack($index);
@@ -104,10 +104,10 @@ function get_caller_file($index = NULL) {
 
 /**
  * Gets the class of the object used to make the method call at the specified index.
- * 
+ *
  * @param int $index
  *
- * @return string 
+ * @return string
  */
 function get_caller_class($index = NULL) {
   $index = _ignore_this_in_call_stack($index);
@@ -116,7 +116,7 @@ function get_caller_class($index = NULL) {
 
 /**
  * Gets the object used to make the method call at the specified index.
- * 
+ *
  * @param int $index
  *
  * @return object
@@ -129,11 +129,11 @@ function get_caller_object($index = NULL) {
 
 /**
  * Gets the call type of the caller at the specified index.
- * 
+ *
  * @param int $index
- * 
- * @return string 
- *   If a method call, "->" is returned. If a static method call, "::" is returned. 
+ *
+ * @return string
+ *   If a method call, "->" is returned. If a static method call, "::" is returned.
  *   If a function call, nothing is returned.
  */
 function get_caller_type($index = NULL) {
@@ -143,11 +143,11 @@ function get_caller_type($index = NULL) {
 
 /**
  * Gets the function arguments for the function at the specified index in the call stack.
- * 
+ *
  * @param int $index
- * 
+ *
  * @return array
- *   If inside a function, this lists the functions arguments. If inside an included file, 
+ *   If inside a function, this lists the functions arguments. If inside an included file,
  *   this lists the included file name(s).
  */
 function get_caller_args($index = NULL) {

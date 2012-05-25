@@ -19,14 +19,14 @@ class XMLDocumentValidator {
 
   /**
    * The type of validation.
-   * 
+   *
    * @var XMLValidatorType
    */
   private $type;
 
   /**
    * The filename of the validition document.
-   * 
+   *
    * @var string
    */
   private $filename;
@@ -34,7 +34,7 @@ class XMLDocumentValidator {
   /**
    *
    * @param XMLValidatorType $type
-   * @param string $filename 
+   * @param string $filename
    */
   public function __construct(XMLSchemaFormat $type, $filename = NULL) {
     $this->type = $type;
@@ -46,7 +46,7 @@ class XMLDocumentValidator {
 
   /**
    *
-   * @param DOMDocument $document 
+   * @param DOMDocument $document
    * @return boolean
    */
   public function isValid(DOMDocument $document) {
@@ -63,7 +63,7 @@ class XMLDocumentValidator {
 }
 
 /**
- * 
+ *
  */
 class XMLDocumentNamepaces {
   /**
@@ -73,16 +73,16 @@ class XMLDocumentNamepaces {
 
   /**
    * The default namespace, it can be NULL.
-   * 
+   *
    * @var string
    */
   protected $default;
 
   /**
-   * An array of namespaces declarations where the key is the prefix and the value is the uri. 
-   * 
+   * An array of namespaces declarations where the key is the prefix and the value is the uri.
+   *
    * For example: array('prefix' => 'uri');
-   * 
+   *
    * @var array
    */
   protected $namespaces;
@@ -91,9 +91,9 @@ class XMLDocumentNamepaces {
    * Creates an XMLDocumentNamepaces Instance.
    *
    * @param string $default
-   *   The default namespace for the document. 
+   *   The default namespace for the document.
    * @param array $namespaces
-   *   An array of namespaces declarations where the key is the prefix and the value is the uri. 
+   *   An array of namespaces declarations where the key is the prefix and the value is the uri.
    */
   public function __construct($default = NULL, array $namespaces = NULL) {
     $this->default = $default;
@@ -102,10 +102,10 @@ class XMLDocumentNamepaces {
 
   /**
    * Gets the namespace URI associated with the given namespace prefix if defined.
-   * 
-   * @param string $prefix 
+   *
+   * @param string $prefix
    *   The namespace prefix.
-   * 
+   *
    * @return string
    *   The namespace URI if defined FALSE otherwise.
    */
@@ -115,10 +115,10 @@ class XMLDocumentNamepaces {
 
   /**
    * Gets the namespace prefix associated with the given namespace URI if defined.
-   * 
+   *
    * @param string $uri
    *   The namespace URI.
-   * 
+   *
    * @return string
    *   The namespace prefix if defined FALSE otherwise.
    */
@@ -129,7 +129,7 @@ class XMLDocumentNamepaces {
 
   /**
    * Gets the default namespace URI if defined.
-   * 
+   *
    * @return string
    *   The default namespace URI, if defined FALSE othewise.
    */
@@ -139,7 +139,7 @@ class XMLDocumentNamepaces {
 
   /**
    *
-   * @param DOMXPath $xpath 
+   * @param DOMXPath $xpath
    */
   public function registerNamespaces(DOMXPath $xpath) {
     if ($this->default) {
@@ -154,14 +154,14 @@ class XMLDocumentNamepaces {
 
 /**
  * Handles generic XML concepts and data.
- * 
+ *
  * Underscore prevents collision with the defined class in XML forms, one day they should be the same class.
  */
 class _XMLDocument extends DOMDocument {
 
   /**
    *
-   * @var XMLValidator 
+   * @var XMLValidator
    */
   protected $validator;
   protected $namepaces;
@@ -175,7 +175,7 @@ class _XMLDocument extends DOMDocument {
   /**
    *
    * @param DOMDocument $document
-   * @param XMLValidator $validator 
+   * @param XMLValidator $validator
    */
   public function __construct(XMLDocumentNamepaces $namespaces, XMLDocumentValidator $validator = NULL) {
     parent::__construct();
@@ -187,10 +187,10 @@ class _XMLDocument extends DOMDocument {
 
   /**
    * Loads an XML document from a file.
-   * 
+   *
    * @param string $filename
    *   The path to the XML document.
-   * @param int $options 
+   * @param int $options
    *   Bitwise OR of the libxml option constants.
    */
   public function load($filename, $options = null) {
@@ -204,12 +204,12 @@ class _XMLDocument extends DOMDocument {
 
   /**
    * Loads an XML document from a string.
-   * 
+   *
    * @param string $source
    *   The string containing the XML.
-   * @param int $options 
+   * @param int $options
    *   Bitwise OR of the libxml option constants.
-   * 
+   *
    * @return
    * Returns TRUE on success or FALSE on failure. If called statically, returns a DOMDocument or FALSE on failure.
    */
@@ -238,9 +238,9 @@ class _XMLDocument extends DOMDocument {
 
   /**
    * Checks if this XML document is valid.
-   * 
+   *
    * If no method of validation is provided its always assumed to be valid.
-   * 
+   *
    * @return boolean
    *   TRUE if valid, FALSE otherwise.
    */

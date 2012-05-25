@@ -9,11 +9,11 @@ module_load_include('inc', 'php_lib', 'String');
 
 /**
  * Gets the a xpath for the given node.
- * 
+ *
  * The returned xpath will return the given node only.
- * 
+ *
  * @param DOMNode $node
- * @return type 
+ * @return type
  */
 function get_dom_node_xpath(DOMNode $node) {
   $path = get_dom_node_xpath_fragment($node);
@@ -26,9 +26,9 @@ function get_dom_node_xpath(DOMNode $node) {
 
 /**
  * Gets a fragment of the xpath for the given node.
- * 
+ *
  * @param DOMNode $node
- * @return type 
+ * @return type
  */
 function get_dom_node_xpath_fragment(DOMNode $node) {
   if (get_class($node) == 'DOMAttr') {
@@ -45,12 +45,12 @@ function get_dom_node_xpath_fragment(DOMNode $node) {
 }
 
 /**
- * Gets the child index for the given child element in its parent, 
+ * Gets the child index for the given child element in its parent,
  * for the purpose of being used to generate an xpath.
- * 
+ *
  * @param DOMNode $parent
  * @param DOMNode $child
- * @return int 
+ * @return int
  */
 function get_dom_node_xpath_index(DOMNode $parent, DOMNode $child) {
   $xpath = new DOMXPath($child->ownerDocument);
@@ -70,7 +70,7 @@ function get_dom_node_xpath_index(DOMNode $parent, DOMNode $child) {
 
 /**
  * Converts a DOMNodeList to an array.
- * 
+ *
  * @param DOMNodeList $list
  * @return array
  */
@@ -85,8 +85,8 @@ function dom_node_list_to_array(DOMNodeList $list) {
 
 /**
  * Formats and indents the given DOMDocument.
- * 
- * @param DOMDocument $document 
+ *
+ * @param DOMDocument $document
  */
 function format_dom_document(DOMDocument $document) {
   $filename = drupal_get_path('module', 'php_lib') . '/js/pretty-print/PrettyPrint.xsl';
@@ -102,15 +102,15 @@ function format_dom_document(DOMDocument $document) {
  * Includes the files required for the DOMDocument pretty print to function.
  */
 function dom_document_pretty_print_include_files() {
-  $path = drupal_get_path('module', 'php_lib'); 
+  $path = drupal_get_path('module', 'php_lib');
   drupal_add_js("$path/js/pretty-print/prettify.js");
   drupal_add_css("$path/js/pretty-print/prettify.css"); // @todo move pretty print to a its own module or a lib folder.
 }
 
 /**
  * Pretty print the given document, to the browswer.
- * 
- * @param DOMDocument $document 
+ *
+ * @param DOMDocument $document
  */
 function dom_document_pretty_print(DOMDocument $document, $ret = FALSE) {
   global $base_url;
@@ -132,7 +132,7 @@ function dom_document_pretty_print(DOMDocument $document, $ret = FALSE) {
 
 /**
  *
- * @param DOMElement $element 
+ * @param DOMElement $element
  * @param string $type
  * @return array
  */
@@ -149,7 +149,7 @@ function dom_node_children(DOMNode $node, $type = NULL) {
  * @param DOMNode $node
  * @param type $type
  * @param type $property
- * @param type $value 
+ * @param type $value
  */
 function dom_node_filter_children(DOMNode $node, $type, $property, $value) {
   $output = array();
@@ -164,12 +164,12 @@ function dom_node_filter_children(DOMNode $node, $type, $property, $value) {
 
 /**
  * Finds unquie child on params.
- * 
+ *
  * @param DOMNode $node
  * @param type $type
  * @param type $property
  * @param type $value
- * @return type 
+ * @return type
  */
 function dom_node_find_child(DOMNode $node, $type, $property, $value) {
   $children = dom_node_filter_children($node, 'DOMElement', 'localName', 'complexType');
@@ -181,10 +181,10 @@ function dom_node_find_child(DOMNode $node, $type, $property, $value) {
 
 /**
  * Calls a function for each child node of the given element node.
- * 
+ *
  * @param DOMElement $element
  * @param mixed $child_type
- * @param mixed $user_func 
+ * @param mixed $user_func
  * @param ... Arguments for the user function.
  */
 function dom_element_for_each_child(DOMElement $element, $child_type, $user_func /* Variable Arguments */) {
@@ -202,9 +202,9 @@ function dom_element_for_each_child(DOMElement $element, $child_type, $user_func
 
 /**
  * Checks if a given node has child DOMElement's.
- * 
+ *
  * @param DOMNode $node
- * 
+ *
  * @return int
  */
 function dom_element_has_child_elements(DOMNode $node) {

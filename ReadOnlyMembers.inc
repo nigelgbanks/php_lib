@@ -8,19 +8,19 @@ module_load_include('inc', 'php_lib', 'ReadOnlyPrivateMembers');
 module_load_include('inc', 'php_lib', 'ReadOnlyProtectedMembers');
 
 /**
- * 
+ *
  */
 class ReadOnlyMembers {
 
   /**
    * Private members that are read only.
-   * 
+   *
    * @var ReadOnlyPrivateMembers
    */
   public $private;
   /**
    * Protected members that are read only.
-   * 
+   *
    * @var ReadOnlyProtectedMembers
    */
   public $protected;
@@ -28,12 +28,15 @@ class ReadOnlyMembers {
   /**
    *
    * @param array $private
-   * @param array $protected 
+   * @param array $protected
    */
   public function __construct(array $private, array $protected, array $params = NULL) {
     $owner = isset($params['owner']) ? $params['owner'] : get_caller_class(1);
     $depth = isset($params['depth']) ? $params['depth'] : 3;
-    $properties = array('owner_class' => $owner_class, 'depth' => $depth); // Account for this class in the depth.
+    $properties = array(
+      'owner_class' => $owner_class,
+      'depth' => $depth,
+    ); // Account for this class in the depth.
     $this->private = new ReadOnlyPrivateMembers($private, $properties);
     $this->protected = new ReadOnlyProtectedMembers($owner_class, $properties);
   }
@@ -48,7 +51,7 @@ class ReadOnlyMembers {
 
   /**
    *
-   * @param string $name 
+   * @param string $name
    */
   public function has($name) {
     return $this->private->has($name) || $this->protected->has($name);
@@ -79,7 +82,7 @@ class ReadOnlyMembers {
   /**
    *
    * @param string $name
-   * @param mixed $value 
+   * @param mixed $value
    */
   public function __set($name, $value) {
     if ($this->private->has($name)) {
