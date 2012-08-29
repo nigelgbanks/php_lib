@@ -255,6 +255,20 @@ class TextFile extends File {
   const MAC = 3;
 
   /**
+   * Endings
+   * 
+   * @array 
+   */
+  static protected $formats = array(self::UNIX, self::DOS, self::MAC);
+
+  /**
+   * Endings
+   * 
+   * @array 
+   */
+  static protected $endings = array(self::UNIX => "\n", self::DOS => "\r\n", self::MAC => "\r");
+
+  /**
    * The expected line ending format. 
    *
    * @var int
@@ -279,14 +293,26 @@ class TextFile extends File {
    * @throws InvalidArgumentException
    *   If the $handle or $format provided is not vaild.
    */
-  public function __construct($handle, $format = self::UNIX) {
+  public function __construct($handle, $format = NULL) {
     parent::__construct($handle);
-    $endings = array(self::UNIX => "\n", self::DOS => "\r\n", self::MAC => "\r");
-    if (!array_key_exists($format, $endings)) {
+    $format = isset($format) ? $format : $this->detectFormat();
+    if (array_search($format, self::$formats) === FALSE) {
       throw new InvalidArgumentException(t('Invalid format given for ' . __CLASS__));
     }
     $this->format = $format;
-    $this->ending = $endings[$format];
+    $this->ending = self::$endings[$format];
+  }
+
+  /**
+   * Reads the file and attempts to guess the format.
+   * 
+   * @return string
+   */
+  public function detectFormat() {
+    /**
+     * @todo implment
+     */
+    return self::UNIX;
   }
 
   /**
