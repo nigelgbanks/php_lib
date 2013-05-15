@@ -86,7 +86,7 @@ class PHPLib_DelimitedFile_TestCase extends DrupalUnitTestCase {
         break;
       }
     }
-    $this->assert($successful, "DelimitedFile::isDelimiter() correctly sought after all delimiters.");
+    $this->assert($successful, "DelimitedFile::seekAfterDelimiter() correctly moved pointer to end of all delimiters.");
     unset($file); // Destroy the reference to the file.
   }
 
