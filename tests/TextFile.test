@@ -108,7 +108,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
         break;
       }
     }
-    $this->assert($successful, "TextFile::seekBeforeEOL() correctly sought before all EOL.");
+    $this->assert($successful, "TextFile::seekBeforeEOL() correctly moved pointer to before all EOL.");
     unset($file); // Destroy the reference to the file.
   }
 
@@ -129,7 +129,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
         break;
       }
     }
-    $this->assert($successful, "TextFile::seekAfterEOL() Correctly sought after all EOL.");
+    $this->assert($successful, "TextFile::seekAfterEOL() Correctly moved pointer to after all EOL.");
     unset($file); // Destroy the reference to the file.
   }
 
@@ -150,7 +150,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
         break;
       }
     }
-    $this->assert($successful, "TextFile::seekLineStart() correctly sought after all EOL.");
+    $this->assert($successful, "TextFile::seekLineStart() correctly moved pointer to the start of each line.");
     unset($file); // Destroy the reference to the file.
   }
 
@@ -171,7 +171,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
         break;
       }
     }
-    $this->assert($successful, "TextFile::seekLineEnd() correctly sought after all EOL.");
+    $this->assert($successful, "TextFile::seekLineEnd() correctly moved pointer to after all EOL.");
     unset($file); // Destroy the reference to the file.
   }
 
@@ -192,7 +192,7 @@ class PHPLib_TextFile_TestCase extends DrupalUnitTestCase {
         break;
       }
     }
-    $this->assert($successful, "TextFile::seekLineEnd() correctly sought after all EOL.");
+    $this->assert($successful, "TextFile::seekLineEnd() correctly moved pointer to after all EOL.");
     unset($file); // Destroy the reference to the file.
   }
 
