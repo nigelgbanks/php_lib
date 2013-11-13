@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="php_lib" default="build">
-  <target name="build" depends="clean,prepare,lint,phploc,code_sniff,phpcpd,pdepend,doxygen,phpcb,test" />
+  <target name="build" depends="clean,prepare,php-eval,lint,phploc,code_sniff,phpcpd,pdepend,doxygen,phpcb,test,cc-process,cc-export" />
 
   <target name="clean" description="Cleanup build artifacts">
       <delete dir="${basedir}/build/test" />
@@ -9,6 +9,7 @@
       <delete dir="${basedir}/build/pdepend" />
       <delete dir="${basedir}/build/api" />
       <delete dir="${basedir}/build/code-browser" />
+      <delete dir="${basedir}/build/code_coverage" />
   </target>
 
   <target name="prepare" description="Prepares workspace for artifacts" >
@@ -17,6 +18,13 @@
     <mkdir dir="${basedir}/build/pdepend" />
     <mkdir dir="${basedir}/build/api" />
     <mkdir dir="${basedir}/build/code-browser" />
+    <mkdir dir="${basedir}/build/code_coverage" />
+  </target>
+  
+  <target name="php-eval" description="Use php-eval to set the code_coverage_filter_files variable">
+    <exec executable="drush">
+      <arg line="php-eval &quot;variable_set('code_coverage_files', array('sites/all/modules/php_lib/php_lib.module', 'sites/all/modules/php_lib/All.inc', 'sites/all/modules/php_lib/Array.inc', 'sites/all/modules/php_lib/Backtrace.inc', 'sites/all/modules/php_lib/DOMHelpers.inc', 'sites/all/modules/php_lib/DrupalFormHelpers.inc', 'sites/all/modules/php_lib/Enum.inc', 'sites/all/modules/php_lib/File.inc', 'sites/all/modules/php_lib/LazyMembers.inc', 'sites/all/modules/php_lib/Members.inc', 'sites/all/modules/php_lib/Misc.inc', 'sites/all/modules/php_lib/PackedArray.inc', 'sites/all/modules/php_lib/ReadOnlyMembers.inc', 'sites/all/modules/php_lib/ReadOnlyPrivateMembers.inc', 'sites/all/modules/php_lib/ReadOnlyProtectedMembers.inc', 'sites/all/modules/php_lib/ReflectionHelpers.inc', 'sites/all/modules/php_lib/String.inc', 'sites/all/modules/php_lib/xml/EACCPFDocument.inc', 'sites/all/modules/php_lib/xml/XMLDocument.inc')); variable_set('code_coverage_modules', array());&quot;"/>
+    </exec>
   </target>
 
   <target name="lint" description="Perform syntax check of sourcecode files">
@@ -79,6 +87,18 @@
   <target name="test">
     <exec executable="bash">
         <arg line='-c "php ../../../../scripts/run-tests.sh --xml ${basedir}/build/test PHP\ Lib"' />
+    </exec>
+  </target>
+  
+  <target name="cc-process" description="Processes the code coverage output so it can be exported">
+    <exec executable="drush">
+      <arg line="cc-process all"/>
+    </exec>
+  </target>
+  
+  <target name="cc-export" description="Generate a code coverage report for the simpletest run">
+    <exec executable="drush">
+      <arg line="cc-export latest --html --csv --tag-html --generate-index --path=${basedir}/build/code_coverage"/>
     </exec>
   </target>
 
